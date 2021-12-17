@@ -96,6 +96,10 @@ public class TestPutKudu {
     private static final String ISO_8601_YEAR_MONTH_DAY = "2000-01-01";
     private static final String ISO_8601_YEAR_MONTH_DAY_PATTERN = "yyyy-MM-dd";
 
+    private static final String TIMESTAMP_FIELD = "updated";
+    private static final String TIMESTAMP_STANDARD = "2000-01-01 12:00:00";
+    private static final String TIMESTAMP_MICROSECONDS = "2000-01-01 12:00:00.123456";
+
     private TestRunner testRunner;
 
     private MockPutKudu processor;
@@ -511,19 +515,64 @@ public class TestPutKudu {
     }
 
     @Test
+    public void testBuildPartialRowWithDateToString() throws ParseException {
+        final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO_8601_YEAR_MONTH_DAY_PATTERN);
+        final java.util.Date dateFieldValue = dateFormat.parse(ISO_8601_YEAR_MONTH_DAY);
+
+        final PartialRow row = buildPartialRowDateField(dateFieldValue, Type.STRING);
+        final String column = row.getString(DATE_FIELD);
+        assertEquals("Partial Row Field not matched", ISO_8601_YEAR_MONTH_DAY, column);
+    }
+
+    @Test
     public void testBuildPartialRowWithDateString() {
         assertPartialRowDateFieldEquals(ISO_8601_YEAR_MONTH_DAY);
     }
 
+    @Test
+    public void testBuildPartialRowWithTimestampStandardString() {
+        assertPartialRowTimestampFieldEquals(TIMESTAMP_STANDARD);
+    }
+
+    @Test
+    public void testBuildPartialRowWithTimestampMicrosecondsString() {
+        assertPartialRowTimestampFieldEquals(TIMESTAMP_MICROSECONDS);
+    }
+
+    private void assertPartialRowTimestampFieldEquals(final Object timestampFieldValue) {
+        final PartialRow row = buildPartialRowTimestampField(timestampFieldValue);
+        final Timestamp timestamp = row.getTimestamp(TIMESTAMP_FIELD);
+        final Timestamp expected = Timestamp.valueOf(timestampFieldValue.toString());
+        assertEquals("Partial Row Timestamp Field not matched", expected, timestamp);
+    }
+
+    private PartialRow buildPartialRowTimestampField(final Object timestampFieldValue) {
+        final Schema kuduSchema = new Schema(Collections.singletonList(
+                new ColumnSchema.ColumnSchemaBuilder(TIMESTAMP_FIELD, Type.UNIXTIME_MICROS).nullable(true).build()
+        ));
+
+        final RecordSchema schema = new SimpleRecordSchema(Collections.singletonList(
+                new RecordField(TIMESTAMP_FIELD, RecordFieldType.TIMESTAMP.getDataType())
+        ));
+
+        final Map<String, Object> values = new HashMap<>();
+        values.put(TIMESTAMP_FIELD, timestampFieldValue);
+        final MapRecord record = new MapRecord(schema, values);
+
+        final PartialRow row = kuduSchema.newPartialRow();
+        processor.buildPartialRow(kuduSchema, row, record, schema.getFieldNames(), true, true);
+        return row;
+    }
+
     private void assertPartialRowDateFieldEquals(final Object dateFieldValue) {
-        final PartialRow row = buildPartialRowDateField(dateFieldValue);
+        final PartialRow row = buildPartialRowDateField(dateFieldValue, Type.DATE);
         final java.sql.Date rowDate = row.getDate(DATE_FIELD);
         assertEquals("Partial Row Date Field not matched", ISO_8601_YEAR_MONTH_DAY, rowDate.toString());
     }
 
-    private PartialRow buildPartialRowDateField(final Object dateFieldValue) {
+    private PartialRow buildPartialRowDateField(final Object dateFieldValue, final Type columnType) {
         final Schema kuduSchema = new Schema(Collections.singletonList(
-                new ColumnSchema.ColumnSchemaBuilder(DATE_FIELD, Type.DATE).nullable(true).build()
+                new ColumnSchema.ColumnSchemaBuilder(DATE_FIELD, columnType).nullable(true).build()
         ));
 
         final RecordSchema schema = new SimpleRecordSchema(Collections.singletonList(

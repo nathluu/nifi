@@ -16,11 +16,13 @@
 # under the License.
 #
 
-FROM openjdk:8-jre AS artifactbase
+ARG IMAGE_NAME=openjdk
+ARG IMAGE_TAG=8-jre
+FROM ${IMAGE_NAME}:${IMAGE_TAG} AS artifactbase
 LABEL maintainer="Apache NiFi <dev@nifi.apache.org>"
 
 ARG NIFI_REGISTRY_BINARY
-ARG NIFI_REGISTRY_VERSION=1.14.0
+ARG NIFI_REGISTRY_VERSION=1.15.1
 
 ENV NIFI_REGISTRY_BASE_DIR /opt/nifi-registry
 ENV NIFI_REGISTRY_HOME ${NIFI_REGISTRY_BASE_DIR}/nifi-registry-current
@@ -34,7 +36,7 @@ RUN unzip ${NIFI_REGISTRY_BASE_DIR}/nifi-registry-${NIFI_REGISTRY_VERSION}-bin.z
     && ln -s ${NIFI_REGISTRY_HOME} ${NIFI_REGISTRY_BASE_DIR}/nifi-registry-${NIFI_REGISTRY_VERSION}
 
 
-FROM openjdk:8-jre
+FROM ${IMAGE_NAME}:${IMAGE_TAG}
 LABEL maintainer="Apache NiFi Registry <dev@nifi.apache.org>"
 LABEL site="https://nifi.apache.org"
 

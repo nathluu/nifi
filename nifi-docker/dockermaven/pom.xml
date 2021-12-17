@@ -22,7 +22,7 @@
 
     <properties>
         <docker.image.name>openjdk</docker.image.name>
-        <docker.image.tag>8-jre</docker.image.tag>
+        <docker.image.tag>8u312-jre-bullseye</docker.image.tag>
         <docker.maintainer><![CDATA[Apache NiFi <dev@nifi.apache.org>]]></docker.maintainer>
     </properties>
 
@@ -52,7 +52,7 @@
                                         <NIFI_BINARY>target/nifi-${nifi.version}-bin.zip</NIFI_BINARY>
                                         <NIFI_TOOLKIT_BINARY>target/nifi-toolkit-${nifi.version}-bin.zip</NIFI_TOOLKIT_BINARY>
                                     </buildArgs>
-                                    <repository>apache/nifi</repository>
+                                    <repository>nathluu/nifi</repository>
                                     <tag>${project.version}-dockermaven</tag>
                                 </configuration>
                             </execution>

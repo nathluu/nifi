@@ -19,13 +19,16 @@
 ARG IMAGE_NAME=openjdk
 ARG IMAGE_TAG=8-jre
 FROM ${IMAGE_NAME}:${IMAGE_TAG} AS artifactbase
-LABEL maintainer="Apache NiFi <dev@nifi.apache.org>"
+ARG MAINTAINER="Apache NiFi <dev@nifi.apache.org>"
+LABEL maintainer="${MAINTAINER}"
 
 ARG NIFI_REGISTRY_BINARY
 ARG NIFI_REGISTRY_VERSION=1.15.1
+ARG NIFI_TOOLKIT_BINARY
 
 ENV NIFI_REGISTRY_BASE_DIR /opt/nifi-registry
 ENV NIFI_REGISTRY_HOME ${NIFI_REGISTRY_BASE_DIR}/nifi-registry-current
+ENV NIFI_TOOLKIT_HOME ${NIFI_REGISTRY_BASE_DIR}/nifi-toolkit-current
 
 ADD sh/ ${NIFI_REGISTRY_BASE_DIR}/scripts/
 
@@ -35,9 +38,15 @@ RUN unzip ${NIFI_REGISTRY_BASE_DIR}/nifi-registry-${NIFI_REGISTRY_VERSION}-bin.z
     && mv ${NIFI_REGISTRY_BASE_DIR}/nifi-registry-${NIFI_REGISTRY_VERSION} ${NIFI_REGISTRY_HOME} \
     && ln -s ${NIFI_REGISTRY_HOME} ${NIFI_REGISTRY_BASE_DIR}/nifi-registry-${NIFI_REGISTRY_VERSION}
 
+COPY $NIFI_TOOLKIT_BINARY $NIFI_REGISTRY_BASE_DIR
+RUN unzip ${NIFI_REGISTRY_BASE_DIR}/nifi-toolkit-${NIFI_REGISTRY_VERSION}-bin.zip -d ${NIFI_REGISTRY_BASE_DIR} \
+    && rm ${NIFI_REGISTRY_BASE_DIR}/nifi-toolkit-${NIFI_REGISTRY_VERSION}-bin.zip \
+    && mv ${NIFI_REGISTRY_BASE_DIR}/nifi-toolkit-${NIFI_REGISTRY_VERSION} ${NIFI_TOOLKIT_HOME} \
+    && ln -s ${NIFI_TOOLKIT_HOME} ${NIFI_REGISTRY_BASE_DIR}/nifi-toolkit-${NIFI_REGISTRY_VERSION}
 
 FROM ${IMAGE_NAME}:${IMAGE_TAG}
-LABEL maintainer="Apache NiFi Registry <dev@nifi.apache.org>"
+ARG MAINTAINER="Apache NiFi <dev@nifi.apache.org>"
+LABEL maintainer="${MAINTAINER}"
 LABEL site="https://nifi.apache.org"
 
 ARG UID=1000

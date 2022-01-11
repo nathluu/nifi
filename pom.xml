@@ -39,6 +39,7 @@
         <module>nifi-stateless</module>
         <module>nifi-registry</module>
         <module>nifi-toolkit</module>
+        <module>nifi-manifest</module>
         <module>c2</module>
     </modules>
     <url>https://nifi.apache.org</url>
@@ -95,7 +96,9 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <inceptionYear>2014</inceptionYear>
         <okhttp.version>4.9.2</okhttp.version>
-        <org.bouncycastle.version>1.69</org.bouncycastle.version>
+        <org.apache.httpcomponents.httpclient.version>4.5.13</org.apache.httpcomponents.httpclient.version>
+        <org.apache.httpcomponents.httpcore.version>4.4.15</org.apache.httpcomponents.httpcore.version>
+        <org.bouncycastle.version>1.70</org.bouncycastle.version>
         <org.slf4j.version>1.7.32</org.slf4j.version>
         <ranger.version>2.1.0</ranger.version>
         <jetty.version>9.4.44.v20210927</jetty.version>
@@ -107,14 +110,16 @@
         <!-- The Hadoop version used by nifi-hadoop-libraries-nar and any NARs that depend on it, other NARs that need
             a specific version should override this property, or use a more specific property like abc.hadoop.version -->
         <hadoop.version>3.3.0</hadoop.version>
-        <ozone.version>1.0.0</ozone.version>
+        <ozone.version>1.2.1</ozone.version>
         <gcs.version>2.1.5</gcs.version>
         <aspectj.version>1.9.6</aspectj.version>
         <jersey.version>2.33</jersey.version>
-        <logback.version>1.2.8</logback.version>
+        <logback.version>1.2.9</logback.version>
         <mockito.version>3.11.2</mockito.version>
         <netty.3.version>3.10.6.Final</netty.3.version>
-        <netty.4.version>4.1.69.Final</netty.4.version>
+        <netty.4.version>4.1.72.Final</netty.4.version>
+        <spring.version>5.3.14</spring.version>
+        <spring.security.version>5.6.1</spring.security.version>
     </properties>
 
     <repositories>
@@ -271,6 +276,22 @@
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpg-jdk15on</artifactId>
                 <version>${org.bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${org.apache.httpcomponents.httpclient.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>${org.apache.httpcomponents.httpcore.version}</version>
             </dependency>
 
             <!-- These junit/mockito/groovy/spock/hamcrest dependencies are here to encourage consistent unit test library usage -->
@@ -485,11 +506,32 @@
                 <artifactId>aspectjweaver</artifactId>
                 <version>${aspectj.version}</version>
             </dependency>
-            <!-- Override log4j-core and related Log4j 2 libraries for transitive dependencies to address CVE-2021-44228 -->
+            <!-- Override Log4j 2 libraries for transitive dependencies -->
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-bom</artifactId>
-                <version>2.16.0</version>
+                <version>2.17.1</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.4.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-framework-bom</artifactId>
+                <version>${spring.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-bom</artifactId>
+                <version>${spring.security.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -738,7 +780,7 @@
                 <version>3.0.0</version>
                 <executions>
                     <execution>
-                        <id>enforce-maven</id>
+                        <id>enforce-maven-version</id>
                         <goals>
                             <goal>enforce</goal>
                         </goals>
@@ -752,22 +794,10 @@
                                     </plugins>
                                 </requireSameVersions>
                                 <requireMavenVersion>
-                                    <!-- We do not test this value so we should probably make it something fairly recent -->
                                     <version>3.6.0</version>
                                 </requireMavenVersion>
-                            </rules>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>enforce-no-snapshots</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
                                 <requireReleaseDeps>
-                                    <message>Other than org apache nifi components themselves no snapshot dependencies are allowed</message>
-                                    <!-- If we want to only enforce this for nifi release itself we should add 'onlyWhenRelease' and remove 'failWhenParentIsSnapshot' element -->
+                                    <message>Dependencies outside of Apache NiFi must not use SNAPSHOT versions</message>
                                     <failWhenParentIsSnapshot>false</failWhenParentIsSnapshot>
                                     <excludes>
                                         <exclude>org.apache.nifi:*</exclude>
@@ -775,17 +805,6 @@
                                         <exclude>org.apache.nifi.registry:*</exclude>
                                     </excludes>
                                 </requireReleaseDeps>
-                            </rules>
-                            <fail>true</fail>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>enforce-banned-dependencies</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
                                 <bannedDependencies>
                                     <excludes>
                                         <!-- Cat-X Deps -->
@@ -795,8 +814,10 @@
                                         <exclude>com.google.code.findbugs:jsr305:*:*:compile</exclude>
                                         <!-- Log4J excluded in favor of log4j-over-slf4j and logback -->
                                         <exclude>log4j:log4j:*</exclude>
-                                        <!-- Ban log4j-core less than 2.15.0 due to Log4Shell vulnerability -->
-                                        <exclude>org.apache.logging.log4j:log4j-core:(,2.15.0)</exclude>
+                                        <!-- Log4j 2 log4j-core excluded in favor of log4j-to-slf4j routing to logback -->
+                                        <exclude>org.apache.logging.log4j:log4j-core:*</exclude>
+                                        <!-- Commons Logging excluded in favor of jcl-over-slf4j -->
+                                        <exclude>commons-logging:commons-logging:*</exclude>
                                     </excludes>
                                     <includes>
                                         <!-- Versions of JSR305 after 3.0.1 are allowed https://github.com/findbugsproject/findbugs/issues/128 -->

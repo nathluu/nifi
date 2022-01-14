@@ -308,9 +308,10 @@ public class LookupRecord extends AbstractRouteRecord<Tuple<Map<String, RecordPa
     private Set<Relationship> doInPlaceReplacement(Record record, FlowFile flowFile, ProcessContext context, Tuple<Map<String, RecordPath>, RecordPath> flowFileContext) {
         final Map<String, RecordPath> recordPaths = flowFileContext.getKey();
         final Map<String, Object> lookupCoordinates = new HashMap<>(recordPaths.size());
+        final String coordinateKey = lookupService.getRequiredKeys().iterator().next();
+        boolean hasUnmatchedValue = false;
 
         for (final Map.Entry<String, RecordPath> entry : recordPaths.entrySet()) {
-            final String coordinateKey = entry.getKey();
             final RecordPath recordPath = entry.getValue();
 
             final RecordPathResult pathResult = recordPath.evaluate(record);
@@ -338,20 +339,22 @@ public class LookupRecord extends AbstractRouteRecord<Tuple<Map<String, RecordPa
                 }
 
                 if (!lookupValueOption.isPresent()) {
-                    final Set<Relationship> rels = routeToMatchedUnmatched ? UNMATCHED_COLLECTION : SUCCESS_COLLECTION;
-                    return rels;
+                    hasUnmatchedValue = true;
+                    continue;
                 }
 
                 final Object lookupValue = lookupValueOption.get();
 
                 final DataType inferredDataType = DataTypeUtils.inferDataType(lookupValue, RecordFieldType.STRING.getDataType());
                 fieldValue.updateValue(lookupValue, inferredDataType);
-
             }
         }
 
-        final Set<Relationship> rels = routeToMatchedUnmatched ? MATCHED_COLLECTION : SUCCESS_COLLECTION;
-        return rels;
+        if (hasUnmatchedValue) {
+            return routeToMatchedUnmatched ? UNMATCHED_COLLECTION : SUCCESS_COLLECTION;
+        } else {
+            return routeToMatchedUnmatched ? MATCHED_COLLECTION : SUCCESS_COLLECTION;
+        }
     }
 
     private Set<Relationship> doResultPathReplacement(Record record, FlowFile flowFile, ProcessContext context, Tuple<Map<String, RecordPath>, RecordPath> flowFileContext) {

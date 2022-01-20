@@ -1,5 +1,5 @@
 Apache NiFi
-Copyright 2014-2021 The Apache Software Foundation
+Copyright 2014-2022 The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
@@ -935,17 +935,6 @@ The following binary components are provided under the Apache Software License v
    (ASLv2) JsonPath
      The following NOTICE information applies:
        Copyright 2011 JsonPath authors
-
-  (ASLv2) Kite SDK
-    The following NOTICE information applies:
-      This product includes software developed by Cloudera, Inc.
-      (http://www.cloudera.com/).
-
-      This product includes software developed at
-      The Apache Software Foundation (http://www.apache.org/).
-
-      This product includes software developed by
-      Saxonica (http://www.saxonica.com/).
 
   (ASLv2) MongoDB Java Driver
     The following NOTICE information applies:

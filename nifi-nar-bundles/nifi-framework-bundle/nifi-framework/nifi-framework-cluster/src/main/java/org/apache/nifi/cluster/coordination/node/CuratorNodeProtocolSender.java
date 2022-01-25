@@ -57,9 +57,9 @@ public class CuratorNodeProtocolSender extends AbstractNodeProtocolSender {
 
     @Override
     protected synchronized InetSocketAddress getServiceAddress() throws IOException {
-        if (coordinatorAddress != null) {
-            return coordinatorAddress;
-        }
+//        if (coordinatorAddress != null) {
+//            return coordinatorAddress;
+//        }
 
         final RetryPolicy retryPolicy = new RetryNTimes(0, 0);
         final CuratorFramework curatorClient = CuratorFrameworkFactory.newClient(zkConfig.getConnectString(),

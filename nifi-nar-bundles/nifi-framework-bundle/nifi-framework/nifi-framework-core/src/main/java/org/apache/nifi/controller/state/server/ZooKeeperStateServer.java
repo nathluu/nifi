@@ -118,7 +118,7 @@ public class ZooKeeperStateServer extends ZooKeeperServerMain {
             embeddedZkServer.setMaxSessionTimeout(config.getMaxSessionTimeout());
 
             connectionFactory = ServerCnxnFactory.createFactory();
-            connectionFactory.configure(getAvailableSocketAddress(config), config.getMaxClientCnxns(), quorumPeerConfig.isSslQuorum());
+            connectionFactory.configure(getAvailableSocketAddress(config), config.getMaxClientCnxns(), config.getClientPortListenBacklog(), quorumPeerConfig.isSslQuorum());
             connectionFactory.startup(embeddedZkServer);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -136,7 +136,7 @@ public class ZooKeeperStateServer extends ZooKeeperServerMain {
         try {
             transactionLog = new FileTxnSnapLog(quorumPeerConfig.getDataLogDir(), quorumPeerConfig.getDataDir());
             connectionFactory = ServerCnxnFactory.createFactory();
-            connectionFactory.configure(getAvailableSocketAddress(quorumPeerConfig), quorumPeerConfig.getMaxClientCnxns(), quorumPeerConfig.isSslQuorum());
+            connectionFactory.configure(getAvailableSocketAddress(quorumPeerConfig), quorumPeerConfig.getMaxClientCnxns(), quorumPeerConfig.getClientPortListenBacklog(), quorumPeerConfig.isSslQuorum());
 
             quorumPeer = new QuorumPeer();
 

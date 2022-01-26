@@ -26,7 +26,7 @@
         <curator.version>5.2.0</curator.version>
         <spring.version>5.3.11</spring.version>
         <spring.security.version>5.5.2</spring.security.version>
-        <zookeeper.version>3.5.9</zookeeper.version>
+        <zookeeper.version>3.6.3</zookeeper.version>
     </properties>
     <modules>
         <module>nifi-framework</module>
@@ -625,23 +625,23 @@
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-framework</artifactId>
                 <version>${curator.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.zookeeper</groupId>
-                        <artifactId>zookeeper</artifactId>
-                    </exclusion>
-                </exclusions>
+<!--                <exclusions>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>org.apache.zookeeper</groupId>-->
+<!--                        <artifactId>zookeeper</artifactId>-->
+<!--                    </exclusion>-->
+<!--                </exclusions>-->
             </dependency>
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-recipes</artifactId>
                 <version>${curator.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.zookeeper</groupId>
-                        <artifactId>zookeeper</artifactId>
-                    </exclusion>
-                </exclusions>
+<!--                <exclusions>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>org.apache.zookeeper</groupId>-->
+<!--                        <artifactId>zookeeper</artifactId>-->
+<!--                    </exclusion>-->
+<!--                </exclusions>-->
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>

@@ -52,7 +52,6 @@ import org.apache.nifi.registry.VariableRegistry;
 import org.apache.nifi.registry.flow.FlowRegistryClient;
 import org.apache.nifi.registry.flow.InMemoryFlowRegistry;
 import org.apache.nifi.registry.flow.StandardFlowRegistryClient;
-import org.apache.nifi.registry.flow.VersionedFlowSnapshot;
 import org.apache.nifi.reporting.Bulletin;
 import org.apache.nifi.reporting.BulletinRepository;
 import org.apache.nifi.stateless.bootstrap.ExtensionDiscovery;
@@ -88,15 +87,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class StandardStatelessDataflowFactory implements StatelessDataflowFactory<VersionedFlowSnapshot> {
+public class StandardStatelessDataflowFactory implements StatelessDataflowFactory {
     private static final Logger logger = LoggerFactory.getLogger(StandardStatelessDataflowFactory.class);
 
-    @Override
-    public StatelessDataflow createDataflow(final StatelessEngineConfiguration engineConfiguration, final DataflowDefinition<VersionedFlowSnapshot> dataflowDefinition)
+
+    public StatelessDataflow createDataflow(final StatelessEngineConfiguration engineConfiguration, final DataflowDefinition dataflowDefinition,
+                                            final ClassLoader extensionRootClassLoader)
                     throws IOException, StatelessConfigurationException {
         final long start = System.currentTimeMillis();
-
-        final VersionedFlowSnapshot flowSnapshot = dataflowDefinition.getFlowSnapshot();
 
         ProvenanceRepository provenanceRepo = null;
         ContentRepository contentRepo = null;
@@ -113,13 +111,13 @@ public class StandardStatelessDataflowFactory implements StatelessDataflowFactor
             }
 
             final InMemoryFlowRegistry flowRegistry = new InMemoryFlowRegistry();
-            flowRegistry.addFlowSnapshot(flowSnapshot);
+            flowRegistry.addFlowSnapshot(dataflowDefinition.getVersionedExternalFlow());
             final FlowRegistryClient flowRegistryClient = new StandardFlowRegistryClient();
             flowRegistryClient.addFlowRegistry(flowRegistry);
 
             final NarClassLoaders narClassLoaders = new NarClassLoaders();
             final File extensionsWorkingDir = new File(narExpansionDirectory, "extensions");
-            final ClassLoader systemClassLoader = createSystemClassLoader(engineConfiguration.getNarDirectory());
+            final ClassLoader systemClassLoader = createSystemClassLoader(engineConfiguration.getNarDirectory(), extensionRootClassLoader);
             final ExtensionDiscoveringManager extensionManager = ExtensionDiscovery.discover(extensionsWorkingDir, systemClassLoader, narClassLoaders, engineConfiguration.isLogExtensionDiscovery());
 
             flowFileEventRepo = new RingBufferEventRepository(5);
@@ -183,7 +181,7 @@ public class StandardStatelessDataflowFactory implements StatelessDataflowFactor
                 System.setProperty("java.security.krb5.conf", krb5File.getAbsolutePath());
             }
 
-            final StatelessEngine<VersionedFlowSnapshot> statelessEngine = new StandardStatelessEngine.Builder()
+            final StatelessEngine statelessEngine = new StandardStatelessEngine.Builder()
                     .bulletinRepository(bulletinRepository)
                     .encryptor(lazyInitializedEncryptor)
                     .extensionManager(extensionManager)
@@ -306,17 +304,16 @@ public class StandardStatelessDataflowFactory implements StatelessDataflowFactor
         return "nexus".equalsIgnoreCase(type.trim());
     }
 
-    private ClassLoader createSystemClassLoader(final File narDirectory) throws StatelessConfigurationException {
-        final ClassLoader systemClassLoader = StatelessDataflowFactory.class.getClassLoader();
+    private ClassLoader createSystemClassLoader(final File narDirectory, final ClassLoader extensionRootClassLoader) throws StatelessConfigurationException {
         final int javaMajorVersion = getJavaMajorVersion();
         if (javaMajorVersion >= 11) {
             // If running on Java 11 or greater, add the JAXB/activation/annotation libs to the classpath.
             // TODO: Once the minimum Java version requirement of NiFi is 11, this processing should be removed.
             // JAXB/activation/annotation will be added as an actual dependency via pom.xml.
-            return createJava11OrLaterSystemClassLoader(javaMajorVersion, narDirectory, systemClassLoader);
+            return createJava11OrLaterSystemClassLoader(javaMajorVersion, narDirectory, extensionRootClassLoader);
         }
 
-        return systemClassLoader;
+        return extensionRootClassLoader;
     }
 
     private ClassLoader createJava11OrLaterSystemClassLoader(final int javaMajorVersion, final File narDirectory, final ClassLoader parentClassLoader) throws StatelessConfigurationException {

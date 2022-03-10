@@ -19,7 +19,7 @@ on: [push, pull_request]
 
 env:
   DEFAULT_MAVEN_OPTS: >-
-    -Xmx2g
+    -Xmx3g
     -XX:ReservedCodeCacheSize=1g
     -XX:+UseG1GC
     -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN
@@ -38,10 +38,15 @@ env:
     -P include-grpc
     -P skip-nifi-bin-assembly
   MAVEN_PROJECTS: >-
-    -pl -nifi-toolkit/nifi-toolkit-assembly
-    -pl -nifi-registry/nifi-registry-assembly
     -pl -minifi/minifi-assembly
+    -pl -minifi/minifi-c2/minifi-c2-assembly
+    -pl -minifi/minifi-toolkit/minifi-toolkit-assembly
+    -pl -nifi-registry/nifi-registry-assembly
+    -pl -nifi-registry/nifi-registry-toolkit/nifi-registry-toolkit-assembly
+    -pl -nifi-stateless/nifi-stateless-assembly
     -pl -nifi-system-tests
+    -pl -nifi-system-tests/nifi-system-test-suite
+    -pl -nifi-toolkit/nifi-toolkit-assembly
 
 concurrency:
   group: ${{ github.ref }}
@@ -75,9 +80,9 @@ jobs:
           path: |
             ~/.npm
             **/node_modules
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-npm16-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-npm-
+            ${{ runner.os }}-npm16-
       - name: Set up Java 11
         uses: actions/setup-java@v2
         with:
@@ -134,9 +139,9 @@ jobs:
           path: |
             ~/.npm
             **/node_modules
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-npm16-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-npm-
+            ${{ runner.os }}-npm16-
       - name: Set up Java 8
         uses: actions/setup-java@v2
         with:
@@ -199,9 +204,9 @@ jobs:
           path: |
             ${{ steps.npm-cache-directory.outputs.directory }}
             **/node_modules
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-npm16-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-npm-
+            ${{ runner.os }}-npm16-
       - name: Set up Java 8
         uses: actions/setup-java@v2
         with:

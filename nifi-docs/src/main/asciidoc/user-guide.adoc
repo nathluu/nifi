@@ -550,17 +550,6 @@ to its log, the Processor also will generate a Bulletin. This setting indicates 
 shown in the User Interface. By default, the Bulletin level is set to `WARN`, which means it will display all warning and error-level
 bulletins.
 
-The right-hand side of the Settings tab contains an 'Automatically Terminate Relationships' section. Each of the Relationships that is
-defined by the Processor is listed here, along with its description. In order for a Processor to be considered valid and
-able to run, each Relationship defined by the Processor must be either connected to a downstream component or auto-terminated.
-If a Relationship is auto-terminated, any FlowFile that is routed to that Relationship will be removed from the flow and
-its processing considered complete. Any Relationship that is already connected to a downstream component cannot be auto-terminated.
-The Relationship must first be removed from any Connection that uses it. Additionally, for any Relationship that is selected to be
-auto-terminated, the auto-termination status will be cleared (turned off) if the Relationship is added to a Connection.
-
-
-
-
 ==== Scheduling Tab
 
 The second tab in the Processor Configuration dialog is the Scheduling Tab:
@@ -713,6 +702,32 @@ Some processors also have an Advanced User Interface (UI) built into them. For e
 Some processors have properties that refer to other components, such as Controller Services, which also need to be configured. For example, the GetHTTP processor has an SSLContextService property, which refers to the StandardSSLContextService controller service. When DFMs want to configure this property but have not yet created and configured the controller service, they have the option to create the service on the spot, as depicted in the image below. For more information about configuring Controller Services, see the <<Controller_Services>> section.
 
 image:create-service-ssl-context.png["Create Service"]
+
+==== Relationships Tab
+
+The Relationships tab contains an 'Automatically Terminate / Retry Relationships' section. Each of the Relationships that is defined by the Processor is listed here, along with its description.
+
+image::relationships-tab.png["Relationships Tab"]
+
+===== Automatically Terminate
+In order for a Processor to be considered valid and able to run, each Relationship defined by the Processor must be either connected to a downstream component or auto-terminated. If a Relationship is auto-terminated, any FlowFile that is routed to that Relationship will be removed from the flow and its processing considered complete. Any Relationship that is already connected to a downstream component cannot be auto-terminated. The Relationship must first be removed from any Connection that uses it. Additionally, for any Relationship that is selected to be auto-terminated, the auto-termination status will be cleared (turned off) if the Relationship is added to a Connection.
+
+===== Automatically Retry
+Users can also configure whether or not FlowFiles routed to a given Relationship should be retried.
+
+====== Number of Retry Attempts
+For relationships set to retry, this number indicates how many times a FlowFile will attempt to reprocess before it is routed elsewhere.
+
+====== Retry Back Off Policy
+When a FlowFile is to be retried, the user can configure the backoff policy with two options:
+
+* Penalize - Retry attempts will occur in time, but the processor will continue to process other FlowFiles.
+* Yield - No other FlowFile processing will occur until all retry attempts have been made.
+
+====== Retry Maximum Back Off Period
+Initial retries are based on the Penalty/Yield Duration time specified in the Settings tab. The duration time is repeatedly doubled for every subsequent retry attempt. This number indicates the maximum allowable time period before another retry attempt occurs.
+
+NOTE: If both terminate and retry are selected, any retry logic will happen first, then auto-termination.
 
 ==== Comments Tab
 
@@ -1781,7 +1796,7 @@ For an Output Port, the batch settings tells the remote NiFi how NiFi prefers to
 [[navigating]]
 == Navigating within a DataFlow
 
-NiFi provides various mechanisms for getting around a dataflow. The <<User_Interface>> section describes various ways to navigate around the NiFi canvas; however, once a flow exists on the canvas, there are additional ways to get from one component to another. When multiple Process Groups exist in a flow, breadcrumbs appear at the bottom of the screen, providing a way to navigate between them. In addition, to enter a Process Group that is currently visible on the canvas, simply double-click it, thereby "drilling down" into it. Connections also provide a way to jump from one location to another within the flow. Right-click on a connection and select "Go to source" or "Go to destination" in order to jump to one end of the connection or another. This can be very useful in large, complex dataflows, where the connection lines may be long and span large areas of the canvas. Finally, all components provide the ability to jump forward or backward within the flow. Right-click any component (e.g., a processor, process group, port, etc.) and select either "Upstream connections" or "Downstream connections". A dialog window will open, showing the available upstream or downstream connections that the user may jump to. This can be especially useful when trying to follow a dataflow in a backward direction. It is typically easy to follow the path of a dataflow from start to finish, drilling down into nested process groups; however, it can be more difficult to follow the dataflow in the other direction.
+NiFi provides various mechanisms for getting around a dataflow. The <<User_Interface>> section describes various ways to navigate around the NiFi canvas; however, once a flow exists on the canvas, there are additional ways to get from one component to another. When multiple Process Groups exist in a flow, breadcrumbs appear at the bottom of the screen, providing a way to navigate between them. In addition, to enter a Process Group that is currently visible on the canvas, simply double-click it, thereby "drilling down" into it. To leave a Process Group there are multiple ways: from the context menu opened by right-click on the canvas; with the 'Leave group' button on the 'Navigation' panel; with 'esc' key if no modal or context menu is open. Connections also provide a way to jump from one location to another within the flow. Right-click on a connection and select "Go to source" or "Go to destination" in order to jump to one end of the connection or another. This can be very useful in large, complex dataflows, where the connection lines may be long and span large areas of the canvas. Finally, all components provide the ability to jump forward or backward within the flow. Right-click any component (e.g., a processor, process group, port, etc.) and select either "Upstream connections" or "Downstream connections". A dialog window will open, showing the available upstream or downstream connections that the user may jump to. This can be especially useful when trying to follow a dataflow in a backward direction. It is typically easy to follow the path of a dataflow from start to finish, drilling down into nested process groups; however, it can be more difficult to follow the dataflow in the other direction.
 
 [[component_linking]]
 === Component Linking
@@ -2872,7 +2887,7 @@ Many of the same system properties are supported by both the Persistent and Writ
 * Change the settings for `nifi.provenance.repository.max.storage.time` (default value of `24 hours`) and `nifi.provenance.repository.max.storage.size` (default value of `1 GB`) to values more suitable for your production environment
 * Change `nifi.provenance.repository.index.shard.size` from the default value of `500 MB` to `4 GB`
 * Change `nifi.provenance.repository.index.threads` from the default value of `2` to either `4` or `8` as the Write Ahead repository enables this to scale better
-* If processing a high volume of events, change `nifi.provenance.repository.rollover.time` from a default of `30 secs` to `1 min` and `nifi.provenance.repository.rollover.size` from the default of `100 MB` to `1 GB`
+* If processing a high volume of events, change `nifi.provenance.repository.rollover.size` from the default of `100 MB` to `1 GB`
 
 Once these property changes have been made, restart NiFi.
 

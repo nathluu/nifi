@@ -18,8 +18,6 @@ package org.apache.nifi.reporting.datadog;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.nifi.controller.ConfigurationContext;
 import org.apache.nifi.controller.status.ProcessGroupStatus;
 import org.apache.nifi.controller.status.ProcessorStatus;
@@ -30,13 +28,14 @@ import org.apache.nifi.reporting.ReportingContext;
 import org.apache.nifi.reporting.ReportingInitializationContext;
 import org.apache.nifi.reporting.datadog.metrics.MetricsService;
 import org.apache.nifi.util.MockPropertyValue;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,7 +50,7 @@ public class TestDataDogReportingTask {
 
     private ProcessGroupStatus status;
     private ProcessorStatus procStatus;
-    private ConcurrentHashMap<String, AtomicDouble> metricsMap;
+    private ConcurrentHashMap<String, Double> metricsMap;
     private MetricRegistry metricRegistry;
     private MetricsService metricsService;
     private String env = "dev";
@@ -62,7 +61,7 @@ public class TestDataDogReportingTask {
     private volatile JmxJvmMetrics virtualMachineMetrics;
     private Logger logger;
 
-    @Before
+    @BeforeEach
     public void setup() {
         initProcessGroupStatus();
         initProcessorStatuses();
@@ -114,7 +113,7 @@ public class TestDataDogReportingTask {
     public void testUpdateMetricsProcessor() throws InitializationException, IOException {
         MetricsService ms = new MetricsService();
         Map<String, Double> processorMetrics = ms.getProcessorMetrics(procStatus);
-        Map<String, String> tagsMap = ImmutableMap.of("env", "test");
+        Map<String, String> tagsMap = Collections.singletonMap("env", "test");
         DataDogReportingTask dataDogReportingTask = new TestableDataDogReportingTask();
         dataDogReportingTask.initialize(initContext);
         dataDogReportingTask.setup(configurationContext);
@@ -132,7 +131,7 @@ public class TestDataDogReportingTask {
     public void testUpdateMetricsJVM() throws InitializationException, IOException {
         MetricsService ms = new MetricsService();
         Map<String, Double> processorMetrics = ms.getJVMMetrics(virtualMachineMetrics);
-        Map<String, String> tagsMap = ImmutableMap.of("env", "test");
+        Map<String, String> tagsMap = Collections.singletonMap("env", "test");
 
         DataDogReportingTask dataDogReportingTask = new TestableDataDogReportingTask();
         dataDogReportingTask.initialize(initContext);
@@ -205,7 +204,7 @@ public class TestDataDogReportingTask {
         }
 
         @Override
-        protected ConcurrentHashMap<String, AtomicDouble> getMetricsMap() {
+        protected ConcurrentHashMap<String, Double> getMetricsMap() {
             return metricsMap;
         }
 

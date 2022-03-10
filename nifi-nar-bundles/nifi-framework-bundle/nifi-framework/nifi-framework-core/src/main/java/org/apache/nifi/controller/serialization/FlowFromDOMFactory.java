@@ -399,6 +399,7 @@ public class FlowFromDOMFactory {
         final Size size = getSize(DomUtils.getChild(element, "size"));
         dto.setWidth(size.getWidth());
         dto.setHeight(size.getHeight());
+        dto.setzIndex(getLong(element, "zIndex"));
         dto.setStyle(getStyle(DomUtils.getChild(element, "styles")));
 
         return dto;
@@ -499,6 +500,21 @@ public class FlowFromDOMFactory {
         configDto.setYieldDuration(getString(element, "yieldPeriod"));
         configDto.setBulletinLevel(getString(element, "bulletinLevel"));
         configDto.setLossTolerant(getBoolean(element, "lossTolerant"));
+        if (getString(element, "retryCount") != null) {
+            configDto.setRetryCount(getInt(element, "retryCount"));
+        } else {
+            configDto.setRetryCount(10);
+        }
+        configDto.setMaxBackoffPeriod(getString(element, "maxBackoffPeriod"));
+        configDto.setBackoffMechanism(getString(element, "backoffMechanism"));
+
+        final Set<String> retriedRelationships = new HashSet<>();
+        final List<Element> retriedRelationshipList = getChildrenByTagName(element, "retriedRelationship");
+        for (final Element retriedRelationship : retriedRelationshipList) {
+            retriedRelationships.add(retriedRelationship.getTextContent());
+        }
+        configDto.setRetriedRelationships(retriedRelationships);
+
         final ScheduledState scheduledState = getScheduledState(element);
         dto.setState(scheduledState.toString());
 

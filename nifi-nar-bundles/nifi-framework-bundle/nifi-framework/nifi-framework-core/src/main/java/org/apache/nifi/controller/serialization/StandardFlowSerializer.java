@@ -363,6 +363,7 @@ public class StandardFlowSerializer implements FlowSerializer<Document> {
         parentElement.appendChild(element);
         addTextElement(element, "id", label.getIdentifier());
         addTextElement(element, "versionedComponentId", label.getVersionedComponentId());
+        addTextElement(element, "zIndex", label.getZIndex());
 
         addPosition(element, label.getPosition());
         addSize(element, label.getSize());
@@ -515,6 +516,13 @@ public class StandardFlowSerializer implements FlowSerializer<Document> {
         addTextElement(element, "schedulingStrategy", processor.getSchedulingStrategy().name());
         addTextElement(element, "executionNode", processor.getExecutionNode().name());
         addTextElement(element, "runDurationNanos", processor.getRunDuration(TimeUnit.NANOSECONDS));
+        addTextElement(element, "retryCount", processor.getRetryCount());
+        addTextElement(element, "backoffMechanism", processor.getBackoffMechanism().name());
+        addTextElement(element, "maxBackoffPeriod", processor.getMaxBackoffPeriod());
+
+        for (final String relationship : processor.getRetriedRelationships()) {
+            addTextElement(element, "retriedRelationship", relationship);
+        }
 
         addConfiguration(element, processor.getRawPropertyValues(), processor.getAnnotationData(), encryptor);
 

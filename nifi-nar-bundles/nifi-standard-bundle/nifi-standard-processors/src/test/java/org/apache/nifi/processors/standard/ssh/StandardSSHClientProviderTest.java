@@ -18,6 +18,8 @@ package org.apache.nifi.processors.standard.ssh;
 
 import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.context.PropertyContext;
+import org.apache.nifi.processors.standard.socket.ClientConfigurationException;
+import org.apache.nifi.processors.standard.socket.ClientConnectException;
 import org.apache.nifi.remote.io.socket.NetworkUtils;
 import org.apache.nifi.util.MockPropertyValue;
 import org.junit.jupiter.api.BeforeEach;

@@ -16,15 +16,13 @@
  */
 package org.apache.nifi.processors.aws.s3;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.amazonaws.SdkClientException;
-import com.google.common.collect.ImmutableMap;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.util.StringInputStream;
 import org.apache.nifi.components.ConfigVerificationResult;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.flowfile.attributes.CoreAttributes;
@@ -34,22 +32,23 @@ import org.apache.nifi.processors.aws.AbstractAWSProcessor;
 import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
-
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.util.StringInputStream;
-
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -63,7 +62,7 @@ public class TestFetchS3Object {
     private AmazonS3Client actualS3Client = null;
     private AmazonS3Client mockS3Client = null;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         mockS3Client = mock(AmazonS3Client.class);
         mockFetchS3Object = new FetchS3Object() {
@@ -245,7 +244,7 @@ public class TestFetchS3Object {
 
 
     @Test
-    public void testGetObjectExceptionGoesToFailure() throws IOException {
+    public void testGetObjectExceptionGoesToFailure() {
         runner.setProperty(FetchS3Object.REGION, "us-east-1");
         runner.setProperty(FetchS3Object.BUCKET, "request-bucket");
         final Map<String, String> attrs = new HashMap<>();
@@ -267,7 +266,12 @@ public class TestFetchS3Object {
         runner.enqueue(new byte[0], attrs);
 
         final AmazonS3Exception exception = new AmazonS3Exception("The specified bucket does not exist");
-        exception.setAdditionalDetails(ImmutableMap.of("BucketName", "us-east-1", "Error", "ABC123"));
+
+        final Map<String, String> details = new LinkedHashMap<>();
+        details.put("BucketName", "us-east-1");
+        details.put("Error", "ABC123");
+
+        exception.setAdditionalDetails(details);
         exception.setErrorCode("NoSuchBucket");
         exception.setStatusCode(HttpURLConnection.HTTP_NOT_FOUND);
         Mockito.doThrow(exception).when(mockS3Client).getObject(Mockito.any());
@@ -291,7 +295,7 @@ public class TestFetchS3Object {
         runner.enqueue(new byte[0], attrs);
 
         final AmazonS3Exception exception = new AmazonS3Exception("signature");
-        exception.setAdditionalDetails(ImmutableMap.of("CanonicalRequestBytes", "AA BB CC DD EE FF"));
+        exception.setAdditionalDetails(Collections.singletonMap("CanonicalRequestBytes", "AA BB CC DD EE FF"));
         exception.setErrorCode("SignatureDoesNotMatch");
         exception.setStatusCode(HttpURLConnection.HTTP_FORBIDDEN);
         Mockito.doThrow(exception).when(mockS3Client).getObject(Mockito.any());
@@ -325,7 +329,7 @@ public class TestFetchS3Object {
     }
 
     @Test
-    public void testGetObjectReturnsNull() throws IOException {
+    public void testGetObjectReturnsNull() {
         runner.setProperty(FetchS3Object.REGION, "us-east-1");
         runner.setProperty(FetchS3Object.BUCKET, "request-bucket");
         final Map<String, String> attrs = new HashMap<>();
@@ -339,7 +343,7 @@ public class TestFetchS3Object {
     }
 
     @Test
-    public void testFlowFileAccessExceptionGoesToFailure() throws IOException {
+    public void testFlowFileAccessExceptionGoesToFailure() {
         runner.setProperty(FetchS3Object.REGION, "us-east-1");
         runner.setProperty(FetchS3Object.BUCKET, "request-bucket");
         final Map<String, String> attrs = new HashMap<>();
@@ -355,7 +359,7 @@ public class TestFetchS3Object {
     }
 
     @Test
-    public void testGetPropertyDescriptors() throws Exception {
+    public void testGetPropertyDescriptors() {
         FetchS3Object processor = new FetchS3Object();
         List<PropertyDescriptor> pd = processor.getSupportedPropertyDescriptors();
         assertEquals("size should be eq", 21, pd.size());

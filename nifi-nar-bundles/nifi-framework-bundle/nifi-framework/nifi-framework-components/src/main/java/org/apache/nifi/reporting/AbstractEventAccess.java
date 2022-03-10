@@ -247,6 +247,7 @@ public abstract class AbstractEventAccess implements EventAccess {
             connStatus.setTotalQueuedDuration(conn.getFlowFileQueue().getTotalQueuedDuration(now));
             long minLastQueueDate = conn.getFlowFileQueue().getMinLastQueueDate();
             connStatus.setMaxQueuedDuration(minLastQueueDate == 0 ? 0 : now - minLastQueueDate);
+            connStatus.setFlowFileAvailability(conn.getFlowFileQueue().getFlowFileAvailability());
 
             final FlowFileEvent connectionStatusReport = statusReport.getReportEntry(conn.getIdentifier());
             if (connectionStatusReport != null) {
@@ -549,7 +550,7 @@ public abstract class AbstractEventAccess implements EventAccess {
         }
 
         status.setId(remoteGroup.getIdentifier());
-        status.setTransmissionStatus(remoteGroup.isTransmitting() ? TransmissionStatus.Transmitting : TransmissionStatus.NotTransmitting);
+        status.setTransmissionStatus(remoteGroup.isConfiguredToTransmit() ? TransmissionStatus.Transmitting : TransmissionStatus.NotTransmitting);
         status.setActiveThreadCount(activeThreadCount);
         status.setReceivedContentSize(receivedContentSize);
         status.setReceivedCount(receivedCount);

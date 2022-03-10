@@ -39,9 +39,8 @@ import org.apache.nifi.serialization.record.RecordField;
 import org.apache.nifi.serialization.record.RecordFieldType;
 import org.apache.nifi.serialization.record.RecordSchema;
 import org.apache.nifi.serialization.record.type.RecordDataType;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -60,17 +59,22 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class TestAvroTypeUtil {
 
     @Test
-    @Ignore("Performance test meant for manually testing only before/after changes in order to measure performance difference caused by changes.")
+    @EnabledIfSystemProperty(
+        named = "nifi.test.metrics",
+        matches = "true",
+        disabledReason = "Performance test meant for manually testing only " +
+                "before/after changes in order to measure performance difference caused by changes."
+    )
     public void testCreateAvroRecordPerformance() throws IOException {
         final List<RecordField> fields = new ArrayList<>();
         for (int i=0; i < 100; i++) {
@@ -123,6 +127,29 @@ public class TestAvroTypeUtil {
     }
 
     @Test
+    public void testExtractAvroSchemaWithDefaults() {
+        final List<RecordField> fields = new ArrayList<>();
+        fields.add(new RecordField("string", RecordFieldType.STRING.getDataType(), "hello"));
+        fields.add(new RecordField("int", RecordFieldType.INT.getDataType(), 17));
+        fields.add(new RecordField("long", RecordFieldType.LONG.getDataType(), 42));
+        fields.add(new RecordField("float", RecordFieldType.FLOAT.getDataType(), 2.4F));
+        fields.add(new RecordField("double", RecordFieldType.DOUBLE.getDataType(), 28.1D));
+        fields.add(new RecordField("stringArray", RecordFieldType.ARRAY.getArrayDataType(RecordFieldType.STRING.getDataType()), new String[0]));
+        fields.add(new RecordField("intArray", RecordFieldType.ARRAY.getArrayDataType(RecordFieldType.INT.getDataType()), new Integer[0]));
+
+        final RecordSchema schema = new SimpleRecordSchema(fields);
+        final Schema avroSchema = AvroTypeUtil.extractAvroSchema(schema);
+
+        assertEquals("hello", avroSchema.getField("string").defaultVal());
+        assertEquals(17, avroSchema.getField("int").defaultVal());
+        assertEquals(42L, avroSchema.getField("long").defaultVal());
+        assertEquals(2.4D, (double) avroSchema.getField("float").defaultVal(), 0.002D); // Even though we provide a Float, avro converts it into a Double value.
+        assertEquals(28.1D, (double) avroSchema.getField("double").defaultVal(), 0.002D);
+        assertEquals(new ArrayList<String>(), avroSchema.getField("stringArray").defaultVal());
+        assertEquals(new ArrayList<Integer>(), avroSchema.getField("intArray").defaultVal());
+    }
+
+    @Test
     public void testAvroDefaultValueWithFieldInSchemaButNotRecord() throws IOException {
         final List<RecordField> fields = new ArrayList<>();
         fields.add(new RecordField("name", RecordFieldType.STRING.getDataType()));
@@ -139,9 +166,25 @@ public class TestAvroTypeUtil {
         final GenericRecord avroRecord = AvroTypeUtil.createAvroRecord(record, avroSchema);
         assertEquals("John Doe", avroRecord.get("name"));
         assertEquals("blue", avroRecord.get("color"));
-
     }
 
+    @Test
+    public void testAvroDefaultedLong() throws IOException {
+        final List<RecordField> fields = new ArrayList<>();
+        fields.add(new RecordField("name", RecordFieldType.STRING.getDataType()));
+        final RecordSchema personSchema = new SimpleRecordSchema(fields);
+
+        final org.apache.nifi.serialization.record.Record record = new MapRecord(personSchema, Collections.singletonMap("name", "John Doe"));
+        final Schema avroSchema = SchemaBuilder.record("person").namespace("nifi")
+            .fields()
+            .requiredString("name")
+            .name("number").type().longType().longDefault(0)
+            .endRecord();
+
+        final GenericRecord avroRecord = AvroTypeUtil.createAvroRecord(record, avroSchema);
+        assertEquals("John Doe", avroRecord.get("name"));
+        assertEquals(0L, avroRecord.get("number"));
+    }
 
     @Test
     public void testCreateAvroSchemaPrimitiveTypes() {
@@ -181,8 +224,8 @@ public class TestAvroTypeUtil {
         for (final Field field : avroSchema.getFields()) {
             final Schema fieldSchema = field.schema();
             assertEquals(Type.UNION, fieldSchema.getType());
-            assertTrue("Field " + field.name() + " does not contain NULL type",
-                    fieldSchema.getTypes().contains(Schema.create(Type.NULL)));
+            assertTrue(fieldSchema.getTypes().contains(Schema.create(Type.NULL)),
+                    "Field " + field.name() + " does not contain NULL type");
         }
 
         final RecordSchema afterConversion = AvroTypeUtil.createSchema(avroSchema);
@@ -326,23 +369,23 @@ public class TestAvroTypeUtil {
         RecordSchema result = AvroTypeUtil.createSchema(recursiveSchema);
 
         // Make sure it parsed correctly
-        Assert.assertEquals(3, result.getFieldCount());
+        assertEquals(3, result.getFieldCount());
 
         Optional<RecordField> idField = result.getField("id");
-        Assert.assertTrue(idField.isPresent());
-        Assert.assertEquals(RecordFieldType.INT, idField.get().getDataType().getFieldType());
+        assertTrue(idField.isPresent());
+        assertEquals(RecordFieldType.INT, idField.get().getDataType().getFieldType());
 
         Optional<RecordField> valueField = result.getField("value");
-        Assert.assertTrue(valueField.isPresent());
-        Assert.assertEquals(RecordFieldType.STRING, valueField.get().getDataType().getFieldType());
+        assertTrue(valueField.isPresent());
+        assertEquals(RecordFieldType.STRING, valueField.get().getDataType().getFieldType());
 
         Optional<RecordField> parentField = result.getField("parent");
-        Assert.assertTrue(parentField.isPresent());
-        Assert.assertEquals(RecordFieldType.RECORD, parentField.get().getDataType().getFieldType());
+        assertTrue(parentField.isPresent());
+        assertEquals(RecordFieldType.RECORD, parentField.get().getDataType().getFieldType());
 
         // The 'parent' field should have a circular schema reference to the top level
         // record schema, similar to how Avro handles this
-        Assert.assertEquals(result, ((RecordDataType) parentField.get().getDataType()).getChildSchema());
+        assertEquals(result, ((RecordDataType) parentField.get().getDataType()).getChildSchema());
     }
 
     @Test
@@ -366,41 +409,41 @@ public class TestAvroTypeUtil {
         RecordSchema recordASchema = AvroTypeUtil.createSchema(recursiveSchema);
 
         // Make sure it parsed correctly
-        Assert.assertEquals(3, recordASchema.getFieldCount());
+        assertEquals(3, recordASchema.getFieldCount());
 
         Optional<RecordField> recordAIdField = recordASchema.getField("id");
-        Assert.assertTrue(recordAIdField.isPresent());
-        Assert.assertEquals(RecordFieldType.INT, recordAIdField.get().getDataType().getFieldType());
+        assertTrue(recordAIdField.isPresent());
+        assertEquals(RecordFieldType.INT, recordAIdField.get().getDataType().getFieldType());
 
         Optional<RecordField> recordAValueField = recordASchema.getField("value");
-        Assert.assertTrue(recordAValueField.isPresent());
-        Assert.assertEquals(RecordFieldType.STRING, recordAValueField.get().getDataType().getFieldType());
+        assertTrue(recordAValueField.isPresent());
+        assertEquals(RecordFieldType.STRING, recordAValueField.get().getDataType().getFieldType());
 
         Optional<RecordField> recordAChildField = recordASchema.getField("child");
-        Assert.assertTrue(recordAChildField.isPresent());
-        Assert.assertEquals(RecordFieldType.RECORD, recordAChildField.get().getDataType().getFieldType());
+        assertTrue(recordAChildField.isPresent());
+        assertEquals(RecordFieldType.RECORD, recordAChildField.get().getDataType().getFieldType());
 
         // Get the child schema
         RecordSchema recordBSchema = ((RecordDataType) recordAChildField.get().getDataType()).getChildSchema();
 
         // Make sure it parsed correctly
-        Assert.assertEquals(3, recordBSchema.getFieldCount());
+        assertEquals(3, recordBSchema.getFieldCount());
 
         Optional<RecordField> recordBIdField = recordBSchema.getField("id");
-        Assert.assertTrue(recordBIdField.isPresent());
-        Assert.assertEquals(RecordFieldType.INT, recordBIdField.get().getDataType().getFieldType());
+        assertTrue(recordBIdField.isPresent());
+        assertEquals(RecordFieldType.INT, recordBIdField.get().getDataType().getFieldType());
 
         Optional<RecordField> recordBValueField = recordBSchema.getField("value");
-        Assert.assertTrue(recordBValueField.isPresent());
-        Assert.assertEquals(RecordFieldType.STRING, recordBValueField.get().getDataType().getFieldType());
+        assertTrue(recordBValueField.isPresent());
+        assertEquals(RecordFieldType.STRING, recordBValueField.get().getDataType().getFieldType());
 
         Optional<RecordField> recordBParentField = recordBSchema.getField("parent");
-        Assert.assertTrue(recordBParentField.isPresent());
-        Assert.assertEquals(RecordFieldType.RECORD, recordBParentField.get().getDataType().getFieldType());
+        assertTrue(recordBParentField.isPresent());
+        assertEquals(RecordFieldType.RECORD, recordBParentField.get().getDataType().getFieldType());
 
         // Make sure the 'parent' field has a schema reference back to the original top
         // level record schema
-        Assert.assertEquals(recordASchema, ((RecordDataType) recordBParentField.get().getDataType()).getChildSchema());
+        assertEquals(recordASchema, ((RecordDataType) recordBParentField.get().getDataType()).getChildSchema());
     }
 
     @Test
@@ -478,8 +521,8 @@ public class TestAvroTypeUtil {
 
             final BigDecimal bigDecimal = new Conversions.DecimalConversion().fromBytes(serializedBytes, fieldSchema,
                     decimalType);
-            assertEquals(String.format("%s %s should be converted to %s", rawValue.getClass().getSimpleName(), rawValue,
-                    expect), expect, bigDecimal.toString());
+            assertEquals(expect, bigDecimal.toString(), String.format("%s %s should be converted to %s", rawValue.getClass().getSimpleName(), rawValue,
+                    expect));
         });
 
     }
@@ -585,8 +628,8 @@ public class TestAvroTypeUtil {
     public void testSchemaNameNotEmpty() throws IOException {
         Schema schema = new Schema.Parser().parse(getClass().getResourceAsStream("simpleSchema.json"));
         RecordSchema recordSchema = AvroTypeUtil.createSchema(schema);
-        Assert.assertTrue(recordSchema.getIdentifier().getName().isPresent());
-        Assert.assertEquals(Optional.of("record_name"), recordSchema.getIdentifier().getName());
+        assertTrue(recordSchema.getIdentifier().getName().isPresent());
+        assertEquals(Optional.of("record_name"), recordSchema.getIdentifier().getName());
     }
 
     @Test
@@ -807,8 +850,8 @@ public class TestAvroTypeUtil {
 
         // then
         final HashMap<String, Object> numbers = (HashMap<String, Object>) result.get("numbers");
-        Assert.assertTrue(Long.class.isInstance(numbers.get("number1")));
-        Assert.assertTrue(Long.class.isInstance(numbers.get("number2")));
+        assertTrue(Long.class.isInstance(numbers.get("number1")));
+        assertTrue(Long.class.isInstance(numbers.get("number2")));
     }
 
     @Test
@@ -1114,6 +1157,17 @@ public class TestAvroTypeUtil {
 
         // THEN
         assertEquals(expected, actual.toString());
+    }
+
+    @Test
+    public void testBuildEnumSchema() {
+        final List<RecordField> fields = new ArrayList<>();
+
+        final DataType enumDataType = RecordFieldType.ENUM.getEnumDataType(Arrays.asList("YES", "NO"));
+        fields.add(new RecordField("enumField", enumDataType));
+        RecordSchema recordSchema = new SimpleRecordSchema(fields);
+        Schema actual = AvroTypeUtil.extractAvroSchema(recordSchema);
+        assertNotNull(actual);
     }
 
     private MapRecord givenRecordContainingNumericMap() {

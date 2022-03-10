@@ -24,11 +24,11 @@ import static org.junit.Assert.fail;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
@@ -769,29 +769,28 @@ public class TestRouteText {
         final RouteText routeText = new RouteText();
         final TestRunner runner = TestRunners.newTestRunner(routeText);
         runner.setProperty(RouteText.MATCH_STRATEGY, RouteText.MATCHES_REGULAR_EXPRESSION);
-        runner.setProperty("simple", ".*(${someValue}).*");
+        final String simpleRelationship = "simple";
+        runner.setProperty(simpleRelationship, ".*(${someValue}).*");
 
-        runner.enqueue("some text", ImmutableMap.of("someValue", "a value"));
-        runner.enqueue("some other text", ImmutableMap.of("someValue", "a value"));
-        runner.run(2);
+        final int iterations = 2;
 
-        assertEquals("Expected 1 elements in the cache for the patterns, got" +
-                routeText.patternsCache.size(), 1, routeText.patternsCache.size());
+        runner.enqueue("some text", Collections.singletonMap("someValue", "a value"));
+        runner.enqueue("some other text", Collections.singletonMap("someValue", "a value"));
+        runner.run(iterations);
 
-        for (int i = 0; i < RouteText.PATTERNS_CACHE_MAXIMUM_ENTRIES * 2; ++i) {
+        assertEquals(1, routeText.patternsCache.size());
+
+        for (int i = 0; i < iterations; ++i) {
             String iString = Long.toString(i);
             runner.enqueue("some text with " + iString + "in it",
-                    ImmutableMap.of("someValue", iString));
+                    Collections.singletonMap("someValue", iString));
             runner.run();
         }
 
-        assertEquals("Expected " + RouteText.PATTERNS_CACHE_MAXIMUM_ENTRIES +
-                " elements in the cache for the patterns, got" + routeText.patternsCache.size(),
-                RouteText.PATTERNS_CACHE_MAXIMUM_ENTRIES, routeText.patternsCache.size());
-
-        runner.assertTransferCount("simple", RouteText.PATTERNS_CACHE_MAXIMUM_ENTRIES * 2);
-        runner.assertTransferCount("unmatched", 2);
-        runner.assertTransferCount("original", RouteText.PATTERNS_CACHE_MAXIMUM_ENTRIES * 2 + 2);
+        runner.assertTransferCount(simpleRelationship, iterations);
+        runner.assertTransferCount(RouteText.REL_MATCH, 0);
+        runner.assertTransferCount(RouteText.REL_NO_MATCH, iterations);
+        runner.assertTransferCount(RouteText.REL_ORIGINAL, iterations * 2);
 
         runner.setProperty(RouteText.IGNORE_CASE, "true");
         assertEquals("Pattern cache is not cleared after changing IGNORE_CASE", 0, routeText.patternsCache.size());

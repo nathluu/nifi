@@ -268,6 +268,10 @@ public class StandardFlowSnippet implements FlowSnippet {
             }
 
             label.setStyle(labelDTO.getStyle());
+            if (labelDTO.getzIndex() != null) {
+                label.setZIndex(label.getZIndex());
+            }
+
             if (!topLevel) {
                 label.setVersionedComponentId(labelDTO.getVersionedComponentId());
             }
@@ -371,6 +375,12 @@ public class StandardFlowSnippet implements FlowSnippet {
                 procNode.setPenalizationPeriod(config.getPenaltyDuration());
                 procNode.setBulletinLevel(LogLevel.valueOf(config.getBulletinLevel()));
                 procNode.setAnnotationData(config.getAnnotationData());
+                procNode.setRetryCount(config.getRetryCount());
+                procNode.setRetriedRelationships(config.getRetriedRelationships());
+                if (config.getBackoffMechanism() != null) {
+                    procNode.setBackoffMechanism(BackoffMechanism.valueOf(config.getBackoffMechanism()));
+                }
+                procNode.setMaxBackoffPeriod(config.getMaxBackoffPeriod());
                 procNode.setStyle(processorDTO.getStyle());
 
                 if (config.getRunDurationMillis() != null) {
@@ -588,6 +598,10 @@ public class StandardFlowSnippet implements FlowSnippet {
             final Connection connection = flowManager.createConnection(connectionDTO.getId(), connectionDTO.getName(), source, destination, relationships);
             if (!topLevel) {
                 connection.setVersionedComponentId(connectionDTO.getVersionedComponentId());
+            }
+
+            if (connectionDTO.getzIndex() != null) {
+                connection.setZIndex(connection.getZIndex());
             }
 
             if (connectionDTO.getBends() != null) {

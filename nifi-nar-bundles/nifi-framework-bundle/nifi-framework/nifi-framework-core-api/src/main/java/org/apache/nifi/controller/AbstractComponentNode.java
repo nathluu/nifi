@@ -331,7 +331,11 @@ public abstract class AbstractComponentNode implements ComponentNode {
 
             final PropertyDescriptor descriptor = getPropertyDescriptor(propertyName);
 
-            if (descriptor.isSensitive()) {
+            // We don't want to allow a sensitive property to reference a parameter unless the value is solely a parameter reference. I.e.,
+            // #{abc} is ok but password#{abc} is not.
+            // However, for "ghost" components (isExtensionMissing() == true) we need to allow this, because we consider all properties sensitive.
+            // If we don't allow this, we'll fail to even create the ghost component.
+            if (descriptor.isSensitive() && !isExtensionMissing()) {
                 if (referenceList.size() > 1) {
                     throw new IllegalArgumentException("The property '" + descriptor.getDisplayName() + "' cannot reference more than one Parameter because it is a sensitive property.");
                 }
@@ -342,22 +346,12 @@ public abstract class AbstractComponentNode implements ComponentNode {
                         throw new IllegalArgumentException("The property '" + descriptor.getDisplayName() + "' is a sensitive property so it can reference a Parameter only if there is no other " +
                             "context around the value. For instance, the value '#{abc}' is allowed but 'password#{abc}' is not allowed.");
                     }
-
-                    final ParameterContext parameterContext = getParameterContext();
-                    if (parameterContext != null) {
-                        final Optional<Parameter> parameter = parameterContext.getParameter(reference.getParameterName());
-                        if (parameter.isPresent() && !parameter.get().getDescriptor().isSensitive()) {
-                            throw new IllegalArgumentException("The property '" + descriptor.getDisplayName() + "' is a sensitive property, so it can only reference Parameters that are sensitive.");
-                        }
-                    }
                 }
             }
 
-            if (descriptor.getControllerServiceDefinition() != null) {
-                if (!referenceList.isEmpty()) {
-                    throw new IllegalArgumentException("The property '" + descriptor.getDisplayName() + "' cannot reference a Parameter because the property is a Controller Service reference. " +
-                        "Allowing Controller Service references to make use of Parameters could result in security issues and a poor user experience. As a result, this is not allowed.");
-                }
+            if (descriptor.getControllerServiceDefinition() != null && !referenceList.isEmpty()) {
+                throw new IllegalArgumentException("The property '" + descriptor.getDisplayName() + "' cannot reference a Parameter because the property is a Controller Service reference. " +
+                    "Allowing Controller Service references to make use of Parameters could result in security issues and a poor user experience. As a result, this is not allowed.");
             }
         }
     }
@@ -627,6 +621,25 @@ public abstract class AbstractComponentNode implements ComponentNode {
 
     /**
      * Generates fingerprint for the additional urls and compares it with the previous
+     * fingerprint value.
+     */
+    @Override
+    public synchronized boolean isReloadAdditionalResourcesNecessary() {
+        // Components that don't have any PropertyDescriptors marked `dynamicallyModifiesClasspath`
+        // won't have the fingerprint i.e. will be null, in such cases do nothing
+        if (additionalResourcesFingerprint == null) {
+            return false;
+        }
+
+        final Set<PropertyDescriptor> descriptors = this.getProperties().keySet();
+        final Set<URL> additionalUrls = this.getAdditionalClasspathResources(descriptors);
+
+        final String newFingerprint = ClassLoaderUtils.generateAdditionalUrlsFingerprint(additionalUrls, determineClasloaderIsolationKey());
+        return (!StringUtils.equals(additionalResourcesFingerprint, newFingerprint));
+    }
+
+    /**
+     * Generates fingerprint for the additional urls and compares it with the previous
      * fingerprint value. If the fingerprint values don't match, the function calls the
      * component's reload() to load the newly found resources.
      */
@@ -792,7 +805,9 @@ public abstract class AbstractComponentNode implements ComponentNode {
                             .valid(false)
                             .explanation("Property references Parameter '" + paramName + "' but the currently selected Parameter Context does not have a Parameter with that name")
                             .build());
+                    continue;
                 }
+
                 final Optional<Parameter> parameterRef = parameterContext.getParameter(paramName);
                 if (parameterRef.isPresent()) {
                     final ParameterDescriptor parameterDescriptor = parameterRef.get().getDescriptor();

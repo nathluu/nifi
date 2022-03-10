@@ -157,6 +157,11 @@ public class StandardProcessorNode extends ProcessorNode implements Connectable 
     private final int hashCode;
     private volatile boolean hasActiveThreads = false;
 
+    private volatile int retryCount;
+    private volatile Set<String> retriedRelationships;
+    private volatile BackoffMechanism backoffMechanism;
+    private volatile String maxBackoffPeriod;
+
     public StandardProcessorNode(final LoggableComponent<Processor> processor, final String uuid,
                                  final ValidationContextFactory validationContextFactory, final ProcessScheduler scheduler,
                                  final ControllerServiceProvider controllerServiceProvider, final ComponentVariableRegistry variableRegistry,
@@ -201,6 +206,11 @@ public class StandardProcessorNode extends ProcessorNode implements Connectable 
         schedulingStrategy = SchedulingStrategy.TIMER_DRIVEN;
         executionNode = isExecutionNodeRestricted() ? ExecutionNode.PRIMARY : ExecutionNode.ALL;
         this.hashCode = new HashCodeBuilder(7, 67).append(identifier).toHashCode();
+
+        retryCount = DEFAULT_RETRY_COUNT;
+        retriedRelationships = new HashSet<>();
+        backoffMechanism = DEFAULT_BACKOFF_MECHANISM;
+        maxBackoffPeriod = DEFAULT_MAX_BACKOFF_PERIOD;
 
         try {
             if (processorDetails.getProcClass().isAnnotationPresent(DefaultSchedule.class)) {
@@ -1863,6 +1873,73 @@ public class StandardProcessorNode extends ProcessorNode implements Connectable 
         return desiredState;
     }
 
+    @Override
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    @Override
+    public void setRetryCount(Integer retryCount) {
+        if (isRunning()) {
+            throw new IllegalStateException("Cannot modify Processor configuration while the Processor is running");
+        }
+        this.retryCount = (retryCount == null) ? 0 : retryCount;
+    }
+
+    @Override
+    public Set<String> getRetriedRelationships() {
+        return retriedRelationships;
+    }
+
+    @Override
+    public void setRetriedRelationships(Set<String> retriedRelationships) {
+        if (isRunning()) {
+            throw new IllegalStateException("Cannot modify Processor configuration while the Processor is running");
+        }
+        this.retriedRelationships = (retriedRelationships == null) ? Collections.emptySet() : new HashSet<>(retriedRelationships);
+    }
+
+    @Override
+    public boolean isRelationshipRetried(final Relationship relationship) {
+        if (relationship == null) {
+            return false;
+        } else {
+            return this.retriedRelationships.contains(relationship.getName());
+        }
+    }
+
+    @Override
+    public BackoffMechanism getBackoffMechanism() {
+        return backoffMechanism;
+    }
+
+    @Override
+    public void setBackoffMechanism(BackoffMechanism backoffMechanism) {
+        if (isRunning()) {
+            throw new IllegalStateException("Cannot modify Processor configuration while the Processor is running");
+        }
+        this.backoffMechanism = (backoffMechanism == null) ? BackoffMechanism.PENALIZE_FLOWFILE : backoffMechanism;
+    }
+
+    @Override
+    public String getMaxBackoffPeriod() {
+        return maxBackoffPeriod;
+    }
+
+    @Override
+    public void setMaxBackoffPeriod(String maxBackoffPeriod) {
+        if (isRunning()) {
+            throw new IllegalStateException("Cannot modify Processor configuration while the Processor is running");
+        }
+        if (maxBackoffPeriod == null) {
+            maxBackoffPeriod = DEFAULT_MAX_BACKOFF_PERIOD;
+        }
+        final long backoffNanos = FormatUtils.getTimeDuration(maxBackoffPeriod, TimeUnit.NANOSECONDS);
+        if (backoffNanos < 0) {
+            throw new IllegalArgumentException("Max Backoff Period must be positive");
+        }
+        this.maxBackoffPeriod = maxBackoffPeriod;
+    }
     private void monitorAsyncTask(final Future<?> taskFuture, final Future<?> monitoringFuture, final long completionTimestamp) {
         if (taskFuture.isDone()) {
             monitoringFuture.cancel(false); // stop scheduling this task

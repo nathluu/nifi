@@ -19,7 +19,6 @@ package org.apache.nifi.web.api.metrics;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -28,25 +27,14 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.Collection;
 import java.util.Enumeration;
-import java.util.regex.Pattern;
 
 /**
  * Prometheus Metrics Writer supporting Prometheus Text Version 0.0.4 with optional filtering
  */
-public class TextFormatPrometheusMetricsWriter implements PrometheusMetricsWriter {
-    private final Pattern sampleNamePattern;
+public class TextFormatPrometheusMetricsWriter extends AbstractPrometheusMetricsWriter {
 
-    private final Pattern sampleLabelValuePattern;
-
-    private final boolean filteringDisabled;
-
-    public TextFormatPrometheusMetricsWriter(
-            final String sampleName,
-            final String sampleLabelValue
-    ) {
-        this.sampleNamePattern = StringUtils.isBlank(sampleName) ? null : Pattern.compile(sampleName);
-        this.sampleLabelValuePattern = StringUtils.isBlank(sampleLabelValue) ? null : Pattern.compile(sampleLabelValue);
-        this.filteringDisabled = StringUtils.isAllBlank(sampleName, sampleLabelValue);
+    public TextFormatPrometheusMetricsWriter(final String sampleName, final String sampleLabelValue) {
+        super(sampleName, sampleLabelValue);
     }
 
     @Override
@@ -58,14 +46,5 @@ public class TextFormatPrometheusMetricsWriter implements PrometheusMetricsWrite
                 writer.flush();
             }
         }
-    }
-
-    private Enumeration<Collector.MetricFamilySamples> getSamples(final CollectorRegistry registry) {
-        final Enumeration<Collector.MetricFamilySamples> samples = registry.metricFamilySamples();
-        return filteringDisabled ? samples : new FilteringMetricFamilySamplesEnumeration(
-                samples,
-                sampleNamePattern,
-                sampleLabelValuePattern
-        );
     }
 }

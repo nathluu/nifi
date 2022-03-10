@@ -708,7 +708,7 @@ public final class DtoFactory {
         dto.setBackPressureObjectThreshold(flowFileQueue.getBackPressureObjectThreshold());
         dto.setBackPressureDataSizeThreshold(flowFileQueue.getBackPressureDataSizeThreshold());
         dto.setFlowFileExpiration(flowFileQueue.getFlowFileExpiration());
-        dto.setPrioritizers(new ArrayList<String>());
+        dto.setPrioritizers(new ArrayList<>());
         for (final FlowFilePrioritizer comparator : flowFileQueue.getPriorities()) {
             dto.getPrioritizers().add(comparator.getClass().getCanonicalName());
         }
@@ -717,7 +717,7 @@ public final class DtoFactory {
         for (final Relationship selectedRelationship : connection.getRelationships()) {
             if (!Relationship.ANONYMOUS.equals(selectedRelationship)) {
                 if (dto.getSelectedRelationships() == null) {
-                    dto.setSelectedRelationships(new TreeSet<String>(Collator.getInstance(Locale.US)));
+                    dto.setSelectedRelationships(new TreeSet<>(Collator.getInstance(Locale.US)));
                 }
 
                 dto.getSelectedRelationships().add(selectedRelationship.getName());
@@ -728,7 +728,7 @@ public final class DtoFactory {
         for (final Relationship availableRelationship : connection.getSource().getRelationships()) {
             if (!Relationship.ANONYMOUS.equals(availableRelationship)) {
                 if (dto.getAvailableRelationships() == null) {
-                    dto.setAvailableRelationships(new TreeSet<String>(Collator.getInstance(Locale.US)));
+                    dto.setAvailableRelationships(new TreeSet<>(Collator.getInstance(Locale.US)));
                 }
 
                 dto.getAvailableRelationships().add(availableRelationship.getName());
@@ -811,6 +811,7 @@ public final class DtoFactory {
         dto.setLabel(label.getValue());
         dto.setParentGroupId(label.getProcessGroup().getIdentifier());
         dto.setVersionedComponentId(label.getVersionedComponentId().orElse(null));
+        dto.setzIndex(label.getZIndex());
 
         return dto;
     }
@@ -1177,6 +1178,7 @@ public final class DtoFactory {
 
         snapshot.setFlowFilesQueued(connectionStatus.getQueuedCount());
         snapshot.setBytesQueued(connectionStatus.getQueuedBytes());
+        snapshot.setFlowFileAvailability(connectionStatus.getFlowFileAvailability().name());
 
         snapshot.setFlowFilesIn(connectionStatus.getInputCount());
         snapshot.setBytesIn(connectionStatus.getInputBytes());
@@ -1869,7 +1871,7 @@ public final class DtoFactory {
         dto.setName(group.getName());
         dto.setPosition(createPositionDto(group.getPosition()));
         dto.setComments(group.getComments());
-        dto.setTransmitting(group.isTransmitting());
+        dto.setTransmitting(group.isConfiguredToTransmit());
         dto.setCommunicationsTimeout(group.getCommunicationsTimeout());
         dto.setYieldDuration(group.getYieldDuration());
         dto.setParentGroupId(group.getProcessGroup().getIdentifier());
@@ -3155,6 +3157,7 @@ public final class DtoFactory {
             relationshipDTO.setDescription(rel.getDescription());
             relationshipDTO.setName(rel.getName());
             relationshipDTO.setAutoTerminate(node.isAutoTerminated(rel));
+            relationshipDTO.setRetry(node.isRelationshipRetried(rel));
             relationships.add(relationshipDTO);
         }
 
@@ -3994,6 +3997,11 @@ public final class DtoFactory {
         dto.setSchedulingStrategy(procNode.getSchedulingStrategy().name());
         dto.setExecutionNode(procNode.getExecutionNode().name());
 
+       dto.setBackoffMechanism(procNode.getBackoffMechanism().name());
+       dto.setMaxBackoffPeriod(procNode.getMaxBackoffPeriod());
+       dto.setRetriedRelationships(procNode.getRetriedRelationships());
+       dto.setRetryCount(procNode.getRetryCount());
+
         return dto;
     }
 
@@ -4096,6 +4104,7 @@ public final class DtoFactory {
         copy.setWidth(original.getWidth());
         copy.setHeight(original.getHeight());
         copy.setVersionedComponentId(original.getVersionedComponentId());
+        copy.setzIndex(original.getzIndex());
 
         return copy;
     }
@@ -4224,6 +4233,10 @@ public final class DtoFactory {
         copy.setDefaultConcurrentTasks(original.getDefaultConcurrentTasks());
         copy.setDefaultSchedulingPeriod(original.getDefaultSchedulingPeriod());
         copy.setLossTolerant(original.isLossTolerant());
+        copy.setBackoffMechanism(original.getBackoffMechanism());
+        copy.setMaxBackoffPeriod(original.getMaxBackoffPeriod());
+        copy.setRetryCount(original.getRetryCount());
+        copy.setRetriedRelationships(original.getRetriedRelationships());
 
         return copy;
     }

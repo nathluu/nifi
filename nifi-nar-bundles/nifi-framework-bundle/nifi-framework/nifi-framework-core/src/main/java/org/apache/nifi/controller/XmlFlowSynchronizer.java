@@ -1060,6 +1060,9 @@ public class XmlFlowSynchronizer implements FlowSynchronizer {
             if (labelDTO.getWidth() != null && labelDTO.getHeight() != null) {
                 label.setSize(new Size(labelDTO.getWidth(), labelDTO.getHeight()));
             }
+            if (labelDTO.getzIndex() != null) {
+                label.setZIndex(labelDTO.getzIndex());
+            }
 
             processGroup.addLabel(label);
         }
@@ -1232,6 +1235,13 @@ public class XmlFlowSynchronizer implements FlowSynchronizer {
             procNode.setPenalizationPeriod(config.getPenaltyDuration());
             procNode.setYieldPeriod(config.getYieldDuration());
             procNode.setBulletinLevel(LogLevel.valueOf(config.getBulletinLevel()));
+            procNode.setRetryCount(config.getRetryCount());
+            procNode.setRetriedRelationships(config.getRetriedRelationships());
+
+            if (config.getBackoffMechanism() != null) {
+                procNode.setBackoffMechanism(BackoffMechanism.valueOf(config.getBackoffMechanism()));
+            }
+            procNode.setMaxBackoffPeriod(config.getMaxBackoffPeriod());
             updateNonFingerprintedProcessorSettings(procNode, processorDTO);
 
             if (config.getSchedulingStrategy() != null) {
@@ -1535,6 +1545,10 @@ public class XmlFlowSynchronizer implements FlowSynchronizer {
 
             label.setPosition(toPosition(labelDTO.getPosition()));
             label.setSize(new Size(labelDTO.getWidth(), labelDTO.getHeight()));
+            final Long zIndex = labelDTO.getzIndex();
+            if (zIndex != null) {
+                label.setZIndex(zIndex);
+            }
             processGroup.addLabel(label);
         }
     }

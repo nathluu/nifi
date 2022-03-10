@@ -20,7 +20,9 @@ import org.apache.nifi.toolkit.cli.impl.client.nifi.NiFiClient;
 import org.apache.nifi.toolkit.cli.impl.client.nifi.NiFiClientConfig;
 import org.apache.nifi.toolkit.cli.impl.client.nifi.NiFiClientException;
 import org.apache.nifi.toolkit.cli.impl.client.nifi.impl.JerseyNiFiClient;
+import org.apache.nifi.web.api.dto.NodeDTO;
 import org.apache.nifi.web.api.entity.ClusteSummaryEntity;
+import org.apache.nifi.web.api.entity.ClusterEntity;
 import org.apache.nifi.web.api.entity.ConnectionStatusEntity;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -36,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -134,6 +137,9 @@ public abstract class NiFiSystemIT {
             if (destroyFlowFailure != null) {
                 throw destroyFlowFailure;
             }
+        } catch (final Exception e) {
+            logger.error("Failure during test case teardown", e);
+            throw e;
         } finally {
             if (nifiClient != null) {
                 nifiClient.close();
@@ -162,11 +168,11 @@ public abstract class NiFiSystemIT {
         return false;
     }
 
-    protected void destroyFlow() throws NiFiClientException, IOException {
+    protected void destroyFlow() throws NiFiClientException, IOException, InterruptedException {
         getClientUtil().stopProcessGroupComponents("root");
         getClientUtil().disableControllerServices("root", true);
-        getClientUtil().disableControllerLevelServices();
         getClientUtil().stopReportingTasks();
+        getClientUtil().disableControllerLevelServices();
         getClientUtil().stopTransmitting("root");
         getClientUtil().deleteAll("root");
         getClientUtil().deleteControllerLevelServices();
@@ -178,7 +184,7 @@ public abstract class NiFiSystemIT {
     }
 
     protected void waitForAllNodesConnected(final int expectedNumberOfNodes) {
-        waitForAllNodesConnected(expectedNumberOfNodes, 100L);
+        waitForAllNodesConnected(expectedNumberOfNodes, 1000L);
     }
 
     protected void waitForAllNodesConnected(final int expectedNumberOfNodes, final long sleepMillis) {
@@ -192,6 +198,7 @@ public abstract class NiFiSystemIT {
                 final ClusteSummaryEntity clusterSummary = client.getFlowClient().getClusterSummary();
                 final int connectedNodeCount = clusterSummary.getClusterSummary().getConnectedNodeCount();
                 if (connectedNodeCount == expectedNumberOfNodes) {
+                    logger.info("Wait successful, {} nodes connected", expectedNumberOfNodes);
                     return;
                 }
 
@@ -311,7 +318,7 @@ public abstract class NiFiSystemIT {
     }
 
     protected void waitFor(final ExceptionalBooleanSupplier condition) throws InterruptedException {
-        waitFor(condition, 10L);
+        waitFor(condition, 100L);
     }
 
     protected void waitFor(final ExceptionalBooleanSupplier condition, final long delayMillis) throws InterruptedException {
@@ -319,11 +326,28 @@ public abstract class NiFiSystemIT {
         while (!result) {
             try {
                 result = condition.getAsBoolean();
-            } catch (Exception ignore) {
+            } catch (final InterruptedException ie) {
+                throw ie;
+            } catch (final Exception ignored) {
             }
 
             Thread.sleep(delayMillis);
         }
+    }
+
+    protected void waitForNodeStatus(final NodeDTO nodeDto, final String status) throws InterruptedException {
+        waitFor(() -> {
+            try {
+                final ClusterEntity clusterEntity = getNifiClient().getControllerClient().getNodes();
+                final Collection<NodeDTO> nodes = clusterEntity.getCluster().getNodes();
+                final NodeDTO nodeDtoMatch = nodes.stream()
+                        .filter(n -> n.getApiPort().equals(nodeDto.getApiPort())).findFirst().get();
+                return nodeDtoMatch.getStatus().equals(status);
+            } catch (final Exception e) {
+                logger.error("Failed to determine node status", e);
+            }
+            return false;
+        });
     }
 
     protected void waitForQueueNotEmpty(final String connectionId) throws InterruptedException {
@@ -332,6 +356,14 @@ public abstract class NiFiSystemIT {
         waitForQueueCountToMatch(connectionId, size -> size > 0, "greater than 0");
 
         logger.info("Queue on Connection {} is not empty", connectionId);
+    }
+
+    protected void waitForMinQueueCount(final String connectionId, final int queueSize) throws InterruptedException {
+        logger.info("Waiting for Queue Count of at least {} on Connection {}", queueSize, connectionId);
+
+        waitForQueueCountToMatch(connectionId, size -> size >= queueSize, String.valueOf(queueSize));
+
+        logger.info("Queue Count for Connection {} is now {}", connectionId, queueSize);
     }
 
     protected void waitForQueueCount(final String connectionId, final int queueSize) throws InterruptedException {

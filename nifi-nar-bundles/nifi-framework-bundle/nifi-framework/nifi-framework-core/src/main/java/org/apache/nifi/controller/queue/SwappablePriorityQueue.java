@@ -460,6 +460,8 @@ public class SwappablePriorityQueue {
                     // Because we cannot obtain the write lock while already holding the read lock, we set a flag so that we
                     // can migrate swap to active queue only after we've released the read lock.
                     mustMigrateSwapToActive = true;
+                } else if (swapQueue.isEmpty()) {
+                    return FlowFileAvailability.ACTIVE_QUEUE_EMPTY;
                 } else {
                     top = swapQueue.get(0);
                 }
@@ -499,7 +501,12 @@ public class SwappablePriorityQueue {
     }
 
     public void acknowledge(final Collection<FlowFileRecord> flowFiles) {
-        logger.trace("{} Acknowledging {}", this, flowFiles);
+        if (logger.isTraceEnabled()) {
+            for (final FlowFileRecord flowFile : flowFiles) {
+                logger.trace("{} Acknowledging {}", this, flowFile);
+            }
+        }
+
         final long totalSize = flowFiles.stream().mapToLong(FlowFileRecord::getSize).sum();
         incrementUnacknowledgedQueueSize(-flowFiles.size(), -totalSize);
     }
@@ -625,8 +632,10 @@ public class SwappablePriorityQueue {
             writeLock.unlock("poll(int, Set)");
         }
 
-        if (!records.isEmpty()) {
-            logger.trace("{} poll() returning {}", this, records);
+        if (!records.isEmpty() && logger.isTraceEnabled()) {
+            for (final FlowFileRecord flowFile : records) {
+                logger.trace("{} poll() returning {}", this, flowFile);
+            }
         }
 
         return records;
@@ -688,8 +697,10 @@ public class SwappablePriorityQueue {
             this.activeQueue.addAll(unselected);
             incrementActiveQueueSize(-flowFilesPulled, -bytesPulled);
 
-            if (!selectedFlowFiles.isEmpty()) {
-                logger.trace("{} poll() returning {}", this, selectedFlowFiles);
+            if (!selectedFlowFiles.isEmpty() && logger.isTraceEnabled()) {
+                for (final FlowFileRecord flowFile : selectedFlowFiles) {
+                    logger.trace("{} poll() returning {}", this, flowFile);
+                }
             }
 
             return selectedFlowFiles;

@@ -24,6 +24,7 @@ import org.apache.nifi.authorization.ManagedAuthorizer;
 import org.apache.nifi.bundle.BundleCoordinate;
 import org.apache.nifi.cluster.protocol.DataFlow;
 import org.apache.nifi.cluster.protocol.StandardDataFlow;
+import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.connectable.Connectable;
 import org.apache.nifi.connectable.Position;
 import org.apache.nifi.controller.AbstractComponentNode;
@@ -51,18 +52,21 @@ import org.apache.nifi.encrypt.EncryptionException;
 import org.apache.nifi.encrypt.PropertyEncryptor;
 import org.apache.nifi.flow.Bundle;
 import org.apache.nifi.flow.ScheduledState;
+import org.apache.nifi.flow.VersionedComponent;
+import org.apache.nifi.flow.VersionedConfigurableExtension;
 import org.apache.nifi.flow.VersionedControllerService;
 import org.apache.nifi.flow.VersionedExternalFlow;
 import org.apache.nifi.flow.VersionedParameter;
 import org.apache.nifi.flow.VersionedParameterContext;
 import org.apache.nifi.flow.VersionedProcessGroup;
 import org.apache.nifi.flow.VersionedProcessor;
+import org.apache.nifi.flow.VersionedPropertyDescriptor;
 import org.apache.nifi.flow.VersionedReportingTask;
 import org.apache.nifi.groups.AbstractComponentScheduler;
 import org.apache.nifi.groups.BundleUpdateStrategy;
 import org.apache.nifi.groups.ComponentIdGenerator;
 import org.apache.nifi.groups.ComponentScheduler;
-import org.apache.nifi.groups.GroupSynchronizationOptions;
+import org.apache.nifi.groups.FlowSynchronizationOptions;
 import org.apache.nifi.groups.ProcessGroup;
 import org.apache.nifi.nar.ExtensionManager;
 import org.apache.nifi.parameter.Parameter;
@@ -104,6 +108,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -332,8 +337,9 @@ public class VersionedFlowSynchronizer implements FlowSynchronizer {
                 allTemplates.forEach(template -> template.getProcessGroup().removeTemplate(template));
 
                 // Synchronize the root group
-                final GroupSynchronizationOptions syncOptions = new GroupSynchronizationOptions.Builder()
+                final FlowSynchronizationOptions syncOptions = new FlowSynchronizationOptions.Builder()
                     .componentIdGenerator(componentIdGenerator)
+                    .componentComparisonIdLookup(VersionedComponent::getInstanceIdentifier) // compare components by Instance ID because both versioned flows are derived from instantiated flows
                     .componentScheduler(componentScheduler)
                     .ignoreLocalModifications(true)
                     .updateGroupSettings(true)
@@ -379,9 +385,9 @@ public class VersionedFlowSynchronizer implements FlowSynchronizer {
         final ComparableDataFlow clusterDataFlow = new StandardComparableDataFlow("Cluster Flow", clusterVersionedFlow.getRootGroup(), toSet(clusterVersionedFlow.getControllerServices()),
             toSet(clusterVersionedFlow.getReportingTasks()), toSet(clusterVersionedFlow.getParameterContexts()));
 
-        final FlowComparator flowComparator = new StandardFlowComparator(localDataFlow, clusterDataFlow, Collections.emptySet(), differenceDescriptor, encryptor::decrypt);
-        final FlowComparison flowComparison = flowComparator.compare();
-        return flowComparison;
+        final FlowComparator flowComparator = new StandardFlowComparator(localDataFlow, clusterDataFlow, Collections.emptySet(),
+            differenceDescriptor, encryptor::decrypt, VersionedComponent::getInstanceIdentifier);
+        return flowComparator.compare();
     }
 
     private <T> Set<T> toSet(final List<T> values) {
@@ -496,8 +502,9 @@ public class VersionedFlowSynchronizer implements FlowSynchronizer {
 
         taskNode.setAnnotationData(reportingTask.getAnnotationData());
 
+        final Set<String> sensitiveDynamicPropertyNames = getSensitiveDynamicPropertyNames(taskNode, reportingTask);
         final Map<String, String> decryptedProperties = decryptProperties(reportingTask.getProperties());
-        taskNode.setProperties(decryptedProperties);
+        taskNode.setProperties(decryptedProperties, false, sensitiveDynamicPropertyNames);
 
         // enable/disable/start according to the ScheduledState
         switch (reportingTask.getScheduledState()) {
@@ -718,11 +725,39 @@ public class VersionedFlowSynchronizer implements FlowSynchronizer {
             serviceNode.setAnnotationData(versionedControllerService.getAnnotationData());
             serviceNode.setComments(versionedControllerService.getComments());
 
+            final Set<String> sensitiveDynamicPropertyNames = getSensitiveDynamicPropertyNames(serviceNode, versionedControllerService);
             final Map<String, String> decryptedProperties = decryptProperties(versionedControllerService.getProperties());
-            serviceNode.setProperties(decryptedProperties);
+            serviceNode.setProperties(decryptedProperties, false, sensitiveDynamicPropertyNames);
         } finally {
             serviceNode.resumeValidationTrigger();
         }
+    }
+
+    private Set<String> getSensitiveDynamicPropertyNames(final ComponentNode componentNode, final VersionedConfigurableExtension extension) {
+        final Set<String> versionedSensitivePropertyNames = new LinkedHashSet<>();
+
+        // Get Sensitive Property Names based on encrypted values including both supported and dynamic properties
+        extension.getProperties()
+                .entrySet()
+                .stream()
+                .filter(entry -> isValueSensitive(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .forEach(versionedSensitivePropertyNames::add);
+
+        // Get Sensitive Property Names based on supported and dynamic property descriptors
+        extension.getPropertyDescriptors()
+                .values()
+                .stream()
+                .filter(VersionedPropertyDescriptor::isSensitive)
+                .map(VersionedPropertyDescriptor::getName)
+                .forEach(versionedSensitivePropertyNames::add);
+
+        // Filter combined Sensitive Property Names based on Component Property Descriptor status
+        return versionedSensitivePropertyNames.stream()
+                .map(componentNode::getPropertyDescriptor)
+                .filter(PropertyDescriptor::isDynamic)
+                .map(PropertyDescriptor::getName)
+                .collect(Collectors.toSet());
     }
 
     private Map<String, String> decryptProperties(final Map<String, String> encrypted) {
@@ -732,7 +767,7 @@ public class VersionedFlowSynchronizer implements FlowSynchronizer {
     }
 
     private String decrypt(final String value) {
-        if (value != null && value.startsWith(FlowSerializer.ENC_PREFIX) && value.endsWith(FlowSerializer.ENC_SUFFIX)) {
+        if (isValueSensitive(value)) {
             try {
                 return encryptor.decrypt(value.substring(FlowSerializer.ENC_PREFIX.length(), value.length() - FlowSerializer.ENC_SUFFIX.length()));
             } catch (EncryptionException e) {
@@ -744,6 +779,10 @@ public class VersionedFlowSynchronizer implements FlowSynchronizer {
         } else {
             return value;
         }
+    }
+
+    private boolean isValueSensitive(final String value) {
+        return value != null && value.startsWith(FlowSerializer.ENC_PREFIX) && value.endsWith(FlowSerializer.ENC_SUFFIX);
     }
 
     private BundleCoordinate createBundleCoordinate(final Bundle bundle, final String componentType) {
@@ -954,8 +993,7 @@ public class VersionedFlowSynchronizer implements FlowSynchronizer {
 
             FileUtils.copy(gzipIn, baos);
 
-            final byte[] contents = baos.toByteArray();
-            return contents;
+            return baos.toByteArray();
         }
     }
 
@@ -1020,6 +1058,10 @@ public class VersionedFlowSynchronizer implements FlowSynchronizer {
         @Override
         protected void enableNow(final Collection<ControllerServiceNode> controllerServices) {
             flowController.getControllerServiceProvider().enableControllerServices(controllerServices);
+        }
+
+        protected void startNow(final ReportingTaskNode reportingTask) {
+            flowController.startReportingTask(reportingTask);
         }
     }
 }

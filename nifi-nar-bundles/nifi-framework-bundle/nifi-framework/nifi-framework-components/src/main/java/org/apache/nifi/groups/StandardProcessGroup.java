@@ -64,8 +64,11 @@ import org.apache.nifi.controller.service.ControllerServiceReference;
 import org.apache.nifi.controller.service.ControllerServiceState;
 import org.apache.nifi.controller.service.StandardConfigurationContext;
 import org.apache.nifi.encrypt.PropertyEncryptor;
+import org.apache.nifi.flow.VersionedComponent;
 import org.apache.nifi.flow.VersionedExternalFlow;
 import org.apache.nifi.flow.VersionedProcessGroup;
+import org.apache.nifi.flow.synchronization.StandardVersionedComponentSynchronizer;
+import org.apache.nifi.flow.synchronization.VersionedFlowSynchronizationContext;
 import org.apache.nifi.logging.LogRepository;
 import org.apache.nifi.logging.LogRepositoryFactory;
 import org.apache.nifi.nar.ExtensionManager;
@@ -133,6 +136,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -184,7 +188,7 @@ public final class StandardProcessGroup implements ProcessGroup {
     private final Map<String, RemoteProcessGroup> remoteGroups = new HashMap<>();
     private final Map<String, ProcessorNode> processors = new HashMap<>();
     private final Map<String, Funnel> funnels = new HashMap<>();
-    private final Map<String, ControllerServiceNode> controllerServices = new HashMap<>();
+    private final Map<String, ControllerServiceNode> controllerServices = new ConcurrentHashMap<>();
     private final Map<String, Template> templates = new HashMap<>();
     private final PropertyEncryptor encryptor;
     private final MutableVariableRegistry variableRegistry;
@@ -2311,24 +2315,12 @@ public final class StandardProcessGroup implements ProcessGroup {
 
     @Override
     public ControllerServiceNode getControllerService(final String id) {
-        readLock.lock();
-        try {
-            return controllerServices.get(requireNonNull(id));
-        } finally {
-            readLock.unlock();
-        }
+        return controllerServices.get(requireNonNull(id));
     }
 
     @Override
     public Set<ControllerServiceNode> getControllerServices(final boolean recursive) {
-        final Set<ControllerServiceNode> services = new HashSet<>();
-
-        readLock.lock();
-        try {
-            services.addAll(controllerServices.values());
-        } finally {
-            readLock.unlock();
-        }
+        final Set<ControllerServiceNode> services = new HashSet<>(controllerServices.values());
 
         if (recursive) {
             final ProcessGroup parentGroup = parent.get();
@@ -2386,7 +2378,7 @@ public final class StandardProcessGroup implements ProcessGroup {
                     }
                 });
 
-            stateManagerProvider.onComponentRemoved(service.getIdentifier());
+            scheduler.submitFrameworkTask(() -> stateManagerProvider.onComponentRemoved(service.getIdentifier()));
 
             removed = true;
             LOG.info("{} removed from {}", service, this);
@@ -3787,8 +3779,9 @@ public final class StandardProcessGroup implements ProcessGroup {
         final ComponentScheduler defaultComponentScheduler = new DefaultComponentScheduler(controllerServiceProvider, stateLookup);
         final ComponentScheduler retainExistingStateScheduler = new RetainExistingStateComponentScheduler(this, defaultComponentScheduler);
 
-        final GroupSynchronizationOptions synchronizationOptions = new GroupSynchronizationOptions.Builder()
+        final FlowSynchronizationOptions synchronizationOptions = new FlowSynchronizationOptions.Builder()
             .componentIdGenerator(idGenerator)
+            .componentComparisonIdLookup(VersionedComponent::getIdentifier)
             .componentScheduler(retainExistingStateScheduler)
             .ignoreLocalModifications(!verifyNotDirty)
             .updateDescendantVersionedFlows(updateDescendantVersionedFlows)
@@ -3818,14 +3811,14 @@ public final class StandardProcessGroup implements ProcessGroup {
     }
 
     @Override
-    public void synchronizeFlow(final VersionedExternalFlow proposedSnapshot, final GroupSynchronizationOptions synchronizationOptions, final FlowMappingOptions flowMappingOptions) {
+    public void synchronizeFlow(final VersionedExternalFlow proposedSnapshot, final FlowSynchronizationOptions synchronizationOptions, final FlowMappingOptions flowMappingOptions) {
         writeLock.lock();
         try {
             verifyCanUpdate(proposedSnapshot, true, !synchronizationOptions.isIgnoreLocalModifications());
 
-            final ProcessGroupSynchronizationContext groupSynchronizationContext = createGroupSynchronizationContext(
+            final VersionedFlowSynchronizationContext groupSynchronizationContext = createGroupSynchronizationContext(
                 synchronizationOptions.getComponentIdGenerator(), synchronizationOptions.getComponentScheduler(), flowMappingOptions);
-            final StandardProcessGroupSynchronizer synchronizer = new StandardProcessGroupSynchronizer(groupSynchronizationContext);
+            final StandardVersionedComponentSynchronizer synchronizer = new StandardVersionedComponentSynchronizer(groupSynchronizationContext);
 
             final StandardVersionControlInformation originalVci = this.versionControlInfo.get();
             try {
@@ -3913,7 +3906,8 @@ public final class StandardProcessGroup implements ProcessGroup {
             final ComparableDataFlow currentFlow = new StandardComparableDataFlow("Local Flow", versionedGroup);
             final ComparableDataFlow snapshotFlow = new StandardComparableDataFlow("Versioned Flow", vci.getFlowSnapshot());
 
-            final FlowComparator flowComparator = new StandardFlowComparator(snapshotFlow, currentFlow, getAncestorServiceIds(), new EvolvingDifferenceDescriptor(), encryptor::decrypt);
+            final FlowComparator flowComparator = new StandardFlowComparator(snapshotFlow, currentFlow, getAncestorServiceIds(),
+                new EvolvingDifferenceDescriptor(), encryptor::decrypt, VersionedComponent::getIdentifier);
             final FlowComparison comparison = flowComparator.compare();
             final Set<FlowDifference> differences = comparison.getDifferences().stream()
                 .filter(difference -> !FlowDifferenceFilters.isEnvironmentalChange(difference, versionedGroup, flowManager))
@@ -3963,9 +3957,9 @@ public final class StandardProcessGroup implements ProcessGroup {
             }
 
             final ComponentIdGenerator componentIdGenerator = (proposedId, instanceId, destinationGroupId) -> proposedId;
-            final ProcessGroupSynchronizationContext groupSynchronizationContext = createGroupSynchronizationContext(
+            final VersionedFlowSynchronizationContext groupSynchronizationContext = createGroupSynchronizationContext(
                 componentIdGenerator, ComponentScheduler.NOP_SCHEDULER, FlowMappingOptions.DEFAULT_OPTIONS);
-            final StandardProcessGroupSynchronizer synchronizer = new StandardProcessGroupSynchronizer(groupSynchronizationContext);
+            final StandardVersionedComponentSynchronizer synchronizer = new StandardVersionedComponentSynchronizer(groupSynchronizationContext);
 
             synchronizer.verifyCanSynchronize(this, updatedFlow.getFlowContents(), verifyConnectionRemoval);
         } finally {
@@ -3973,9 +3967,9 @@ public final class StandardProcessGroup implements ProcessGroup {
         }
     }
 
-    private ProcessGroupSynchronizationContext createGroupSynchronizationContext(final ComponentIdGenerator componentIdGenerator, final ComponentScheduler componentScheduler,
-                                                                                 final FlowMappingOptions flowMappingOptions) {
-        return new ProcessGroupSynchronizationContext.Builder()
+    private VersionedFlowSynchronizationContext createGroupSynchronizationContext(final ComponentIdGenerator componentIdGenerator, final ComponentScheduler componentScheduler,
+                                                                                  final FlowMappingOptions flowMappingOptions) {
+        return new VersionedFlowSynchronizationContext.Builder()
             .componentIdGenerator(componentIdGenerator)
             .flowManager(flowManager)
             .flowRegistryClient(flowRegistryClient)

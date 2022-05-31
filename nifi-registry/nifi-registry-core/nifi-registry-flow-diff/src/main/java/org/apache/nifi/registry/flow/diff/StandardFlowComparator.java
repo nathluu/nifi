@@ -60,14 +60,16 @@ public class StandardFlowComparator implements FlowComparator {
     private final Set<String> externallyAccessibleServiceIds;
     private final DifferenceDescriptor differenceDescriptor;
     private final Function<String, String> propertyDecryptor;
+    private final Function<VersionedComponent, String> idLookup;
 
-    public StandardFlowComparator(final ComparableDataFlow flowA, final ComparableDataFlow flowB,
-            final Set<String> externallyAccessibleServiceIds, final DifferenceDescriptor differenceDescriptor, final Function<String, String> propertyDecryptor) {
+    public StandardFlowComparator(final ComparableDataFlow flowA, final ComparableDataFlow flowB, final Set<String> externallyAccessibleServiceIds,
+                                  final DifferenceDescriptor differenceDescriptor, final Function<String, String> propertyDecryptor, final Function<VersionedComponent, String> idLookup) {
         this.flowA = flowA;
         this.flowB = flowB;
         this.externallyAccessibleServiceIds = externallyAccessibleServiceIds;
         this.differenceDescriptor = differenceDescriptor;
         this.propertyDecryptor = propertyDecryptor;
+        this.idLookup = idLookup;
     }
 
     @Override
@@ -93,6 +95,13 @@ public class StandardFlowComparator implements FlowComparator {
         return differences;
     }
 
+    private boolean allHaveInstanceId(Set<? extends VersionedComponent> components) {
+        if (components == null) {
+            return false;
+        }
+
+        return components.stream().allMatch(component -> component.getInstanceIdentifier() != null);
+    }
 
     private <T extends VersionedComponent> Set<FlowDifference> compareComponents(final Set<T> componentsA, final Set<T> componentsB, final ComponentComparator<T> comparator) {
         final Map<String, T> componentMapA = byId(componentsA == null ? Collections.emptySet() : componentsA);
@@ -282,9 +291,12 @@ public class StandardFlowComparator implements FlowComparator {
             final String valueB = decrypt(rawValueB, descriptorsB.get(key));
             final String valueA = decrypt(rawValueA, descriptorsA.get(key));
 
-            VersionedPropertyDescriptor descriptor = descriptorsA.get(key);
+            final VersionedPropertyDescriptor descriptorA = descriptorsA.get(key);
+            final VersionedPropertyDescriptor descriptorB = descriptorsB.get(key);
+
+            VersionedPropertyDescriptor descriptor = descriptorA;
             if (descriptor == null) {
-                descriptor = descriptorsB.get(key);
+                descriptor = descriptorB;
             }
 
             final String displayName;
@@ -292,6 +304,12 @@ public class StandardFlowComparator implements FlowComparator {
                 displayName = key;
             } else {
                 displayName = descriptor.getDisplayName() == null ? descriptor.getName() : descriptor.getDisplayName();
+            }
+
+            if (descriptorA != null && descriptorB != null) {
+                if (descriptorA.isSensitive() != descriptorB.isSensitive()) {
+                    differences.add(difference(DifferenceType.PROPERTY_SENSITIVITY_CHANGED, componentA, componentB, key, displayName, descriptorA.isSensitive(), descriptorB.isSensitive()));
+                }
             }
 
             if (valueA == null && valueB != null) {
@@ -515,11 +533,7 @@ public class StandardFlowComparator implements FlowComparator {
 
 
     private <T extends VersionedComponent> Map<String, T> byId(final Set<T> components) {
-        return components.stream().collect(Collectors.toMap(VersionedComponent::getIdentifier, Function.identity()));
-    }
-
-    private Map<String, VersionedParameterContext> parameterContextsById(final Set<VersionedParameterContext> contexts) {
-        return contexts.stream().collect(Collectors.toMap(VersionedParameterContext::getIdentifier, Function.identity()));
+        return components.stream().collect(Collectors.toMap(idLookup::apply, Function.identity()));
     }
 
     private <T extends VersionedComponent> void addIfDifferent(final Set<FlowDifference> differences, final DifferenceType type, final T componentA, final T componentB,

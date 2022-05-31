@@ -35,12 +35,9 @@ import org.apache.nifi.parameter.ParameterLookup;
 import org.apache.nifi.registry.ComponentVariableRegistry;
 import org.apache.nifi.reporting.ReportingContext;
 import org.apache.nifi.reporting.ReportingTask;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class StandardReportingTaskNode extends AbstractReportingTaskNode implements ReportingTaskNode {
 
-    private static final Logger logger = LoggerFactory.getLogger(StandardReportingTaskNode.class);
     private final FlowController flowController;
 
     public StandardReportingTaskNode(final LoggableComponent<ReportingTask> reportingTask, final String id, final FlowController controller,
@@ -77,7 +74,7 @@ public class StandardReportingTaskNode extends AbstractReportingTaskNode impleme
 
     @Override
     public Class<?> getComponentClass() {
-        return getReportingContext().getClass();
+        return getReportingTask().getClass();
     }
 
     @Override
@@ -87,11 +84,33 @@ public class StandardReportingTaskNode extends AbstractReportingTaskNode impleme
 
     @Override
     public ReportingContext getReportingContext() {
-        return new StandardReportingContext(flowController, flowController.getBulletinRepository(), getEffectivePropertyValues(), getReportingTask(), getVariableRegistry(), ParameterLookup.EMPTY);
+        return new StandardReportingContext(flowController, flowController.getBulletinRepository(), getEffectivePropertyValues(), this, getVariableRegistry(), ParameterLookup.EMPTY);
     }
 
     @Override
     protected ParameterContext getParameterContext() {
         return null;
+    }
+
+    @Override
+    public void start() {
+        verifyCanStart();
+        flowController.startReportingTask(this);
+    }
+
+    @Override
+    public void stop() {
+        verifyCanStop();
+        flowController.stopReportingTask(this);
+    }
+
+    public void enable() {
+        verifyCanEnable();
+        flowController.enableReportingTask(this);
+    }
+
+    public void disable() {
+        verifyCanDisable();
+        flowController.disableReportingTask(this);
     }
 }

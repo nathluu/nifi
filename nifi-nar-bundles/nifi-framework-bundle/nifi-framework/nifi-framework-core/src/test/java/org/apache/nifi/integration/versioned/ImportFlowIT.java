@@ -27,6 +27,8 @@ import org.apache.nifi.controller.ProcessorNode;
 import org.apache.nifi.controller.StandardSnippet;
 import org.apache.nifi.controller.service.ControllerServiceNode;
 import org.apache.nifi.flow.Bundle;
+import org.apache.nifi.flow.VersionedControllerService;
+import org.apache.nifi.flow.VersionedComponent;
 import org.apache.nifi.flow.VersionedExternalFlow;
 import org.apache.nifi.flow.VersionedParameterContext;
 import org.apache.nifi.flow.VersionedProcessGroup;
@@ -34,6 +36,7 @@ import org.apache.nifi.groups.ProcessGroup;
 import org.apache.nifi.integration.DirectInjectionExtensionManager;
 import org.apache.nifi.integration.FrameworkIntegrationTest;
 import org.apache.nifi.integration.cs.LongValidatingControllerService;
+import org.apache.nifi.integration.cs.NopControllerService;
 import org.apache.nifi.integration.cs.NopServiceReferencingProcessor;
 import org.apache.nifi.integration.processors.GenerateProcessor;
 import org.apache.nifi.integration.processors.UsernamePasswordProcessor;
@@ -57,7 +60,6 @@ import org.apache.nifi.registry.flow.diff.StandardFlowComparator;
 import org.apache.nifi.registry.flow.mapping.InstantiatedVersionedProcessGroup;
 import org.apache.nifi.registry.flow.mapping.NiFiRegistryFlowMapper;
 import org.apache.nifi.util.FlowDifferenceFilters;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -662,6 +664,36 @@ public class ImportFlowIT extends FrameworkIntegrationTest {
         assertEquals(inputPort.getName(), groupA.getInputPorts().stream().findFirst().get().getName());
     }
 
+    @Test
+    public void testExportImportFlowSwitchesVersionedIdToAndFromInstanceIdOfParameterReferencedControllerService() throws ExecutionException, InterruptedException {
+        ControllerServiceNode controllerService = createControllerServiceNode(NopControllerService.class);
+
+        ProcessorNode processor = createProcessorNode(NopServiceReferencingProcessor.class);
+        processor.setAutoTerminatedRelationships(Collections.singleton(REL_SUCCESS));
+        processor.setProperties(Collections.singletonMap(NopServiceReferencingProcessor.SERVICE.getName(), "#{service}"));
+
+        // Setting value to the instance id
+        Parameter parameter = new Parameter(new ParameterDescriptor.Builder()
+            .name("service")
+            .build(),
+            controllerService.getIdentifier()
+        );
+        setParameter(parameter);
+        VersionedExternalFlow flowSnapshot = createFlowSnapshot();
+
+        VersionedControllerService snapshotControllerService = flowSnapshot.getFlowContents().getControllerServices().stream().findAny().get();
+
+        assertEquals(controllerService.getIdentifier(), snapshotControllerService.getInstanceIdentifier());
+        // Exported flow contains versioned id instead of instance id
+        assertEquals(snapshotControllerService.getIdentifier(), flowSnapshot.getParameterContexts().get("unimportant").getParameters().stream().findAny().get().getValue());
+
+        getRootGroup().setParameterContext(null);
+        getRootGroup().updateFlow(flowSnapshot, null, false, true, true);
+
+        // Imported flow contains instance id again
+        assertEquals(snapshotControllerService.getInstanceIdentifier(), getRootGroup().getParameterContext().getParameter("service").get().getValue());
+    }
+
     private void setParameter(Parameter parameter) {
         ParameterContext rootParameterContext = getFlowController().getFlowManager().getParameterContextManager().getParameterContext("unimportant");
         if (rootParameterContext == null) {
@@ -707,7 +739,8 @@ public class ImportFlowIT extends FrameworkIntegrationTest {
         final ComparableDataFlow registryFlow = new StandardComparableDataFlow("Versioned Flow", registryGroup);
 
         final Set<String> ancestorServiceIds = processGroup.getAncestorServiceIds();
-        final FlowComparator flowComparator = new StandardFlowComparator(registryFlow, localFlow, ancestorServiceIds, new ConciseEvolvingDifferenceDescriptor(), Function.identity());
+        final FlowComparator flowComparator = new StandardFlowComparator(registryFlow, localFlow, ancestorServiceIds, new ConciseEvolvingDifferenceDescriptor(), Function.identity(),
+            VersionedComponent::getIdentifier);
         final FlowComparison flowComparison = flowComparator.compare();
         final Set<FlowDifference> differences = flowComparison.getDifferences().stream()
             .filter(FlowDifferenceFilters.FILTER_ADDED_REMOVED_REMOTE_PORTS)
@@ -747,7 +780,6 @@ public class ImportFlowIT extends FrameworkIntegrationTest {
         return flow;
     }
 
-    @NotNull
     private VersionedProcessGroup createFlowContents() {
         final VersionedProcessGroup flowContents = new VersionedProcessGroup();
         flowContents.setIdentifier("unit-test-flow-contents");
@@ -763,7 +795,6 @@ public class ImportFlowIT extends FrameworkIntegrationTest {
         bundle.setVersion(coordinate.getVersion());
     }
 
-    @NotNull
     private VersionedFlow createVersionedFlow() {
         final VersionedFlow flow = new VersionedFlow();
         flow.setBucketIdentifier("unit-test-bucket");
@@ -774,7 +805,6 @@ public class ImportFlowIT extends FrameworkIntegrationTest {
         return flow;
     }
 
-    @NotNull
     private Bucket createBucket() {
         final Bucket bucket = new Bucket();
         bucket.setCreatedTimestamp(System.currentTimeMillis());

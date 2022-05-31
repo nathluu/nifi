@@ -616,9 +616,10 @@ public interface NiFiServiceFacade {
      *
      * @param id id
      * @param property property
+     * @param sensitive requested sensitive status
      * @return descriptor
      */
-    PropertyDescriptorDTO getProcessorPropertyDescriptor(String id, String property);
+    PropertyDescriptorDTO getProcessorPropertyDescriptor(String id, String property, boolean sensitive);
 
     /**
      * Gets all the Processor transfer objects for this controller.
@@ -1625,6 +1626,16 @@ public interface NiFiServiceFacade {
     VersionedFlowSnapshot getCurrentFlowSnapshotByGroupId(String processGroupId);
 
     /**
+     * Get the current state of the Process Group with the given ID, converted to a Versioned Flow Snapshot. Controller
+     * Services referenced by the Components contained by the Process Group but are part of the parent Process Group(s)
+     * will be included and will be considered as part of the requested Process Group.
+     *
+     * @param processGroupId the ID of the Process Group
+     * @return the current Process Group converted to a Versioned Flow Snapshot for download
+     */
+    VersionedFlowSnapshot getCurrentFlowSnapshotByGroupIdWithReferencedControllerServices(String processGroupId);
+
+    /**
      * Returns the name of the Flow Registry that is registered with the given ID. If no Flow Registry exists with the given ID, will return
      * the ID itself as the name
      *
@@ -2036,9 +2047,10 @@ public interface NiFiServiceFacade {
      *
      * @param id id
      * @param property property
+     * @param sensitive requested sensitive status
      * @return property
      */
-    PropertyDescriptorDTO getControllerServicePropertyDescriptor(String id, String property);
+    PropertyDescriptorDTO getControllerServicePropertyDescriptor(String id, String property, boolean sensitive);
 
     /**
      * Gets the references for specified controller service.
@@ -2158,9 +2170,10 @@ public interface NiFiServiceFacade {
      *
      * @param id id
      * @param property property
+     * @param sensitive requested sensitive status
      * @return descriptor
      */
-    PropertyDescriptorDTO getReportingTaskPropertyDescriptor(String id, String property);
+    PropertyDescriptorDTO getReportingTaskPropertyDescriptor(String id, String property, boolean sensitive);
 
     /**
      * Updates the specified reporting task.

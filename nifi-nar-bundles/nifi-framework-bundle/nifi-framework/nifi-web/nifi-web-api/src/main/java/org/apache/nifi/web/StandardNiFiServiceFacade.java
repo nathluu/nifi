@@ -2890,6 +2890,8 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
                     @Override
                     public RevisionUpdate<ControllerServiceReferencingComponentsEntity> update() {
                         final Set<ComponentNode> updated = controllerServiceDAO.updateControllerServiceReferencingComponents(controllerServiceId, scheduledState, controllerServiceState);
+                        controllerFacade.save();
+
                         final ControllerServiceReference updatedReference = controllerServiceDAO.getControllerService(controllerServiceId).getReferences();
 
                         // get the revisions of the updated components
@@ -3640,15 +3642,9 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
     }
 
     @Override
-    public PropertyDescriptorDTO getProcessorPropertyDescriptor(final String id, final String property) {
+    public PropertyDescriptorDTO getProcessorPropertyDescriptor(final String id, final String property, final boolean sensitive) {
         final ProcessorNode processor = processorDAO.getProcessor(id);
-        PropertyDescriptor descriptor = processor.getPropertyDescriptor(property);
-
-        // return an invalid descriptor if the processor doesn't support this property
-        if (descriptor == null) {
-            descriptor = new PropertyDescriptor.Builder().name(property).addValidator(Validator.INVALID).dynamic(true).build();
-        }
-
+        final PropertyDescriptor descriptor = getPropertyDescriptor(processor, property, sensitive);
         return dtoFactory.createPropertyDescriptorDto(descriptor, processor.getProcessGroup().getIdentifier());
     }
 
@@ -4509,15 +4505,9 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
     }
 
     @Override
-    public PropertyDescriptorDTO getControllerServicePropertyDescriptor(final String id, final String property) {
+    public PropertyDescriptorDTO getControllerServicePropertyDescriptor(final String id, final String property, final boolean sensitive) {
         final ControllerServiceNode controllerService = controllerServiceDAO.getControllerService(id);
-        PropertyDescriptor descriptor = controllerService.getControllerServiceImplementation().getPropertyDescriptor(property);
-
-        // return an invalid descriptor if the controller service doesn't support this property
-        if (descriptor == null) {
-            descriptor = new PropertyDescriptor.Builder().name(property).addValidator(Validator.INVALID).dynamic(true).build();
-        }
-
+        final PropertyDescriptor descriptor = getPropertyDescriptor(controllerService, property, sensitive);
         final String groupId = controllerService.getProcessGroup() == null ? null : controllerService.getProcessGroup().getIdentifier();
         return dtoFactory.createPropertyDescriptorDto(descriptor, groupId);
     }
@@ -4553,15 +4543,9 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
     }
 
     @Override
-    public PropertyDescriptorDTO getReportingTaskPropertyDescriptor(final String id, final String property) {
+    public PropertyDescriptorDTO getReportingTaskPropertyDescriptor(final String id, final String property, final boolean sensitive) {
         final ReportingTaskNode reportingTask = reportingTaskDAO.getReportingTask(id);
-        PropertyDescriptor descriptor = reportingTask.getReportingTask().getPropertyDescriptor(property);
-
-        // return an invalid descriptor if the reporting task doesn't support this property
-        if (descriptor == null) {
-            descriptor = new PropertyDescriptor.Builder().name(property).addValidator(Validator.INVALID).dynamic(true).build();
-        }
-
+        final PropertyDescriptor descriptor = getPropertyDescriptor(reportingTask, property, sensitive);
         return dtoFactory.createPropertyDescriptorDto(descriptor, null);
     }
 
@@ -4682,6 +4666,23 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
 
     @Override
     public VersionedFlowSnapshot getCurrentFlowSnapshotByGroupId(final String processGroupId) {
+        return getCurrentFlowSnapshotByGroupId(processGroupId, false);
+    }
+
+    @Override
+    public VersionedFlowSnapshot getCurrentFlowSnapshotByGroupIdWithReferencedControllerServices(final String processGroupId) {
+        return getCurrentFlowSnapshotByGroupId(processGroupId, true);
+    }
+
+    private Set<String> getAllSubGroups(ProcessGroup processGroup) {
+        final Set<String> result = processGroup.findAllProcessGroups().stream()
+                .map(ProcessGroup::getIdentifier)
+                .collect(Collectors.toSet());
+        result.add(processGroup.getIdentifier());
+        return result;
+    }
+
+    private VersionedFlowSnapshot getCurrentFlowSnapshotByGroupId(final String processGroupId, final boolean includeReferencedControllerServices) {
         final ProcessGroup processGroup = processGroupDAO.getProcessGroup(processGroupId);
 
         // Create a complete (include descendant flows) VersionedProcessGroup snapshot of the flow as it is
@@ -4691,12 +4692,40 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
                 mapper.mapNonVersionedProcessGroup(processGroup, controllerFacade.getControllerServiceProvider());
 
         // Create a complete (include descendant flows) map of parameter contexts
-        final Map<String, VersionedParameterContext> parameterContexts =
-                mapper.mapParameterContexts(processGroup, true);
+        final Map<String, VersionedParameterContext> parameterContexts = mapper.mapParameterContexts(processGroup, true);
 
+        final Map<String, ExternalControllerServiceReference> externalControllerServiceReferences =
+                Optional.ofNullable(nonVersionedProcessGroup.getExternalControllerServiceReferences()).orElse(Collections.emptyMap());
+        final Set<VersionedControllerService> controllerServices = new HashSet<>(nonVersionedProcessGroup.getControllerServices());
         final VersionedFlowSnapshot nonVersionedFlowSnapshot = new VersionedFlowSnapshot();
+
+        ProcessGroup parentGroup = processGroup.getParent();
+
+        if (includeReferencedControllerServices && parentGroup != null) {
+            final Set<VersionedControllerService> externalServices = new HashSet<>();
+
+            do {
+                final Set<ControllerServiceNode> controllerServiceNodes = parentGroup.getControllerServices(false);
+
+                for (final ControllerServiceNode controllerServiceNode : controllerServiceNodes) {
+                    final VersionedControllerService versionedControllerService =
+                            mapper.mapControllerService(controllerServiceNode, controllerFacade.getControllerServiceProvider(), getAllSubGroups(processGroup), externalControllerServiceReferences);
+
+                    if (externalControllerServiceReferences.keySet().contains(versionedControllerService.getIdentifier())) {
+                        versionedControllerService.setGroupIdentifier(processGroupId);
+                        externalServices.add(versionedControllerService);
+                    }
+                }
+            } while ((parentGroup = parentGroup.getParent()) != null);
+
+            controllerServices.addAll(externalServices);
+            nonVersionedFlowSnapshot.setExternalControllerServices(new HashMap<>());
+        } else {
+            nonVersionedFlowSnapshot.setExternalControllerServices(externalControllerServiceReferences);
+        }
+
+        nonVersionedProcessGroup.setControllerServices(controllerServices);
         nonVersionedFlowSnapshot.setFlowContents(nonVersionedProcessGroup);
-        nonVersionedFlowSnapshot.setExternalControllerServices(nonVersionedProcessGroup.getExternalControllerServiceReferences());
         nonVersionedFlowSnapshot.setParameterContexts(parameterContexts);
         nonVersionedFlowSnapshot.setFlowEncodingVersion(RestBasedFlowRegistry.FLOW_ENCODING_VERSION);
 
@@ -4842,7 +4871,8 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
         final ComparableDataFlow registryFlow = new StandardComparableDataFlow("Versioned Flow", registryGroup);
 
         final Set<String> ancestorServiceIds = processGroup.getAncestorServiceIds();
-        final FlowComparator flowComparator = new StandardFlowComparator(registryFlow, localFlow, ancestorServiceIds, new ConciseEvolvingDifferenceDescriptor(), Function.identity());
+        final FlowComparator flowComparator = new StandardFlowComparator(registryFlow, localFlow, ancestorServiceIds, new ConciseEvolvingDifferenceDescriptor(),
+            Function.identity(), VersionedComponent::getIdentifier);
         final FlowComparison flowComparison = flowComparator.compare();
 
         final Set<ComponentDifferenceDTO> differenceDtos = dtoFactory.createComponentDifferenceDtosForLocalModifications(flowComparison, localGroup, controllerFacade.getFlowManager());
@@ -4954,7 +4984,8 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
         final ComparableDataFlow proposedFlow = new StandardComparableDataFlow("New Flow", updatedSnapshot.getFlowContents());
 
         final Set<String> ancestorServiceIds = group.getAncestorServiceIds();
-        final FlowComparator flowComparator = new StandardFlowComparator(localFlow, proposedFlow, ancestorServiceIds, new StaticDifferenceDescriptor(), Function.identity());
+        final FlowComparator flowComparator = new StandardFlowComparator(localFlow, proposedFlow, ancestorServiceIds, new StaticDifferenceDescriptor(),
+            Function.identity(), VersionedComponent::getIdentifier);
         final FlowComparison comparison = flowComparator.compare();
 
         final FlowManager flowManager = controllerFacade.getFlowManager();
@@ -5836,6 +5867,29 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
             return entityFactory.createTenantEntity(dtoFactory.createTenantDTO(user), userRevision,
                     dtoFactory.createPermissionsDto(authorizableLookup.getTenant()));
         };
+    }
+
+    private PropertyDescriptor getPropertyDescriptor(final ComponentNode componentNode, final String property, final boolean sensitive) {
+        final PropertyDescriptor propertyDescriptor;
+
+        final PropertyDescriptor componentDescriptor = componentNode.getPropertyDescriptor(property);
+        if (componentDescriptor == null) {
+            propertyDescriptor = new PropertyDescriptor.Builder().name(property).addValidator(Validator.INVALID).dynamic(true).build();
+        } else if (
+                componentDescriptor.isDynamic() && (
+                        // Allow setting sensitive status for properties marked as sensitive in previous requests
+                        componentNode.isSensitiveDynamicProperty(property) || (
+                                // Allow setting sensitive status for properties not marked as sensitive in supporting components
+                                !componentDescriptor.isSensitive() && componentNode.isSupportsSensitiveDynamicProperties()
+                        )
+                )
+        ) {
+            propertyDescriptor = new PropertyDescriptor.Builder().fromPropertyDescriptor(componentDescriptor).sensitive(sensitive).build();
+        } else {
+            propertyDescriptor = componentDescriptor;
+        }
+
+        return propertyDescriptor;
     }
 
     @Override

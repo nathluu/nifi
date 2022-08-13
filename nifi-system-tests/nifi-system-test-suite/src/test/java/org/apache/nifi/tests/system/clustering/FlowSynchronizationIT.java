@@ -157,7 +157,6 @@ public class FlowSynchronizationIT extends NiFiSystemIT {
             final FlowFileEntity flowFile = getClientUtil().getQueueFlowFile(connection.getId(), i);
             assertEquals("updated", flowFile.getFlowFile().getAttributes().get("attr"));
         }
-
     }
 
     @Test
@@ -734,7 +733,7 @@ public class FlowSynchronizationIT extends NiFiSystemIT {
         getClientUtil().enableControllerService(countB);
         getClientUtil().enableControllerService(countA);
 
-        getNifiClient().getProcessorClient().startProcessor(countFlowFiles);
+        getClientUtil().startProcessor(countFlowFiles);
 
         // Disconnect Node 2. Switch client to direct requests to Node 2 so that we can update the node while it's disconnected.
         disconnectNode(2);

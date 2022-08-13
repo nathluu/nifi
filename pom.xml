@@ -14,12 +14,12 @@
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>25</version>
+        <version>26</version>
         <relativePath />
     </parent>
     <groupId>org.apache.nifi</groupId>
     <artifactId>nifi</artifactId>
-    <version>1.17.0-SNAPSHOT</version>
+    <version>1.18.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>Apache NiFi is an easy to use, powerful, and reliable system to process and distribute data.</description>
     <modules>
@@ -99,28 +99,31 @@
         <maven.site.skip>true</maven.site.skip>
         <node.version>v16.13.2</node.version>
         <frontend.mvn.plugin.version>1.12.1</frontend.mvn.plugin.version>
-        <nifi.nar.maven.plugin.version>1.3.4</nifi.nar.maven.plugin.version>
-        <project.build.outputTimestamp>1647889104</project.build.outputTimestamp>
+        <nifi.nar.maven.plugin.version>1.3.5</nifi.nar.maven.plugin.version>
+        <project.build.outputTimestamp>1658953446</project.build.outputTimestamp>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <inceptionYear>2014</inceptionYear>
         <gson.version>2.9.0</gson.version>
         <kotlin.version>1.6.20</kotlin.version>
-        <okhttp.version>4.9.3</okhttp.version>
+        <okhttp.version>4.10.0</okhttp.version>
         <org.apache.commons.lang3.version>3.12.0</org.apache.commons.lang3.version>
         <org.apache.commons.io.version>2.11.0</org.apache.commons.io.version>
         <org.apache.httpcomponents.httpclient.version>4.5.13</org.apache.httpcomponents.httpclient.version>
         <org.apache.httpcomponents.httpcore.version>4.4.15</org.apache.httpcomponents.httpcore.version>
         <org.bouncycastle.version>1.70</org.bouncycastle.version>
+        <testcontainers.version>1.17.3</testcontainers.version>
         <org.slf4j.version>1.7.36</org.slf4j.version>
         <ranger.version>2.2.0</ranger.version>
-        <jetty.version>9.4.46.v20220331</jetty.version>
+        <jetty.version>9.4.48.v20220622</jetty.version>
         <jackson.bom.version>2.13.3</jackson.bom.version>
-        <avro.version>1.11.0</avro.version>
+        <avro.version>1.11.1</avro.version>
         <jaxb.runtime.version>2.3.5</jaxb.runtime.version>
+        <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <jakarta.xml.bind-api.version>2.3.3</jakarta.xml.bind-api.version>
         <json.smart.version>2.4.8</json.smart.version>
-        <nifi.groovy.version>3.0.8</nifi.groovy.version>
+        <nifi.groovy.version>3.0.9</nifi.groovy.version>
+        <groovy.eclipse.batch.version>3.0.8-01</groovy.eclipse.batch.version>
         <surefire.version>3.0.0-M7</surefire.version>
         <!-- The Hadoop version used by nifi-hadoop-libraries-nar and any NARs that depend on it, other NARs that need
             a specific version should override this property, or use a more specific property like abc.hadoop.version -->
@@ -129,84 +132,17 @@
         <gcs.version>2.1.5</gcs.version>
         <aspectj.version>1.9.6</aspectj.version>
         <jersey.bom.version>2.36</jersey.bom.version>
+        <log4j2.version>2.18.0</log4j2.version>
         <logback.version>1.2.11</logback.version>
         <mockito.version>3.11.2</mockito.version>
         <netty.3.version>3.10.6.Final</netty.3.version>
-        <netty.4.version>4.1.77.Final</netty.4.version>
-        <spring.version>5.3.20</spring.version>
-        <spring.security.version>5.7.1</spring.security.version>
-        <h2.version>2.1.210</h2.version>
+        <netty.4.version>4.1.79.Final</netty.4.version>
+        <spring.version>5.3.22</spring.version>
+        <spring.security.version>5.7.2</spring.security.version>
+        <swagger.annotations.version>1.6.6</swagger.annotations.version>
+        <h2.version>2.1.214</h2.version>
         <zookeeper.version>3.8.0</zookeeper.version>
     </properties>
-
-    <repositories>
-        <repository>
-            <id>central</id>
-            <!-- This should be at top, it makes maven try the central repo
-                first and then others and hence faster dep resolution -->
-            <name>Maven Repository</name>
-            <url>https://repo1.maven.org/maven2</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>apache-repo</id>
-            <name>Apache Repository</name>
-            <url>https://repository.apache.org/content/repositories/releases</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>Shibboleth</id>
-            <name>Shibboleth</name>
-            <url>https://build.shibboleth.net/nexus/content/repositories/releases/</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-        </repository>
-    </repositories>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>gcs-maven-central-mirror</id>
-            <!--
-              Google Mirror of Maven Central, placed first so that it's used instead of flaky Maven Central.
-              See https://storage-download.googleapis.com/maven-central/index.html
-            -->
-            <name>GCS Maven Central mirror</name>
-            <url>https://maven-central.storage-download.googleapis.com/repos/central/data/</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </pluginRepository>
-        <pluginRepository>
-            <id>central</id>
-            <name>Central Repository</name>
-            <url>https://repo.maven.apache.org/maven2</url>
-            <layout>default</layout>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <releases>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-        </pluginRepository>
-    </pluginRepositories>
-
     <dependencyManagement>
         <dependencies>
             <!-- The following dependency management entries exist because these are jars
@@ -315,6 +251,17 @@
                 <artifactId>httpcore</artifactId>
                 <version>${org.apache.httpcomponents.httpcore.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>fluent-hc</artifactId>
+                <version>${org.apache.httpcomponents.httpclient.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
 
             <!-- Commons Codec -->
             <dependency>
@@ -383,7 +330,7 @@
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>testcontainers</artifactId>
-                <version>1.11.3</version>
+                <version>1.17.3</version>
                 <scope>test</scope>
             </dependency>
             <!-- These Jetty dependencies are required for the Jetty Web Server all nars extend from it so we dont want this getting overriden -->
@@ -559,6 +506,11 @@
                 <version>${json.smart.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.swagger</groupId>
+                <artifactId>swagger-annotations</artifactId>
+                <version>${swagger.annotations.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
                 <version>${jackson.bom.version}</version>
@@ -575,7 +527,7 @@
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-bom</artifactId>
-                <version>2.17.2</version>
+                <version>${log4j2.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -673,7 +625,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.9.0</version>
+                    <version>3.10.1</version>
                     <configuration>
                         <fork>true</fork>
                         <showDeprecation>${maven.compiler.showDeprecation}</showDeprecation>
@@ -689,7 +641,7 @@
                 <plugin>
                     <groupId>org.codehaus.groovy</groupId>
                     <artifactId>groovy-eclipse-batch</artifactId>
-                    <version>${nifi.groovy.version}-01</version>
+                    <version>${groovy.eclipse.batch.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -775,7 +727,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>buildnumber-maven-plugin</artifactId>
-                    <version>1.4</version>
+                    <version>3.0.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.antlr</groupId>
@@ -790,14 +742,19 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>9.2.1</version>
+                            <version>9.3</version>
                         </dependency>
                     </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>3.3.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.rat</groupId>
+                    <artifactId>apache-rat-plugin</artifactId>
+                    <version>0.14</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -831,7 +788,7 @@
                     <dependency>
                         <groupId>org.codehaus.groovy</groupId>
                         <artifactId>groovy-eclipse-batch</artifactId>
-                        <version>${nifi.groovy.version}-01</version>
+                        <version>${groovy.eclipse.batch.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -858,7 +815,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.1.0</version>
                 <executions>
                     <execution>
                         <id>enforce-maven-version</id>
@@ -1036,12 +993,6 @@
             </build>
         </profile>
         <profile>
-            <!-- Checks style and licensing requirements. This is a good
-                idea to run for contributions and for the release process. While it would
-                be nice to run always these plugins can considerably slow the build and have
-                proven to create unstable builds in our multi-module project and when building
-                using multiple threads. The stability issues seen with Checkstyle in multi-module
-                builds include false-positives and false negatives. -->
             <id>contrib-check</id>
             <build>
                 <plugins>
@@ -1053,7 +1004,7 @@
                                 <goals>
                                     <goal>check</goal>
                                 </goals>
-                                <phase>verify</phase>
+                                <phase>validate</phase>
                             </execution>
                         </executions>
                     </plugin>
@@ -1063,7 +1014,7 @@
                         <executions>
                             <execution>
                                 <id>check-style</id>
-                                <phase>verify</phase>
+                                <phase>validate</phase>
                                 <configuration>
                                     <encoding>UTF-8</encoding>
                                     <excludes>**/generated-sources/**/*</excludes>
@@ -1152,98 +1103,6 @@
                     </dependency>
                 </dependencies>
             </dependencyManagement>
-        </profile>
-        <!-- The following profiles are here as a convenience for folks that
-            want to build against vendor-specific distributions of the various Hadoop
-            ecosystem libraries. These will alter which dependencies are sourced in a
-            manner that can adjust the correct LICENSE and NOTICE requirements for any
-            affected jar and the resulting assembly overall. These L&N impacts are not
-            automatically handled by the build process and are the responsibility of
-            those creating and using the resulting binary artifacts. -->
-        <profile>
-            <!-- This profile adds the Hortonworks repository for resolving
-                Hortonworks Data Platform (HDP) artifacts for the Hadoop bundles -->
-            <id>hortonworks</id>
-            <repositories>
-                <repository>
-                    <id>hortonworks-releases</id>
-                    <name>Hortonworks Repository</name>
-                    <url>https://repo.hortonworks.com/content/repositories/releases/</url>
-                    <releases>
-                        <enabled>true</enabled>
-                        <updatePolicy>always</updatePolicy>
-                        <checksumPolicy>warn</checksumPolicy>
-                    </releases>
-                    <snapshots>
-                        <enabled>false</enabled>
-                        <updatePolicy>never</updatePolicy>
-                        <checksumPolicy>fail</checksumPolicy>
-                    </snapshots>
-                </repository>
-                <repository>
-                    <id>hortonworks-jetty</id>
-                    <name>Hortonworks Jetty Repository</name>
-                    <url>https://repo.hortonworks.com/content/repositories/jetty-hadoop/</url>
-                    <releases>
-                        <enabled>true</enabled>
-                        <updatePolicy>always</updatePolicy>
-                        <checksumPolicy>warn</checksumPolicy>
-                    </releases>
-                    <snapshots>
-                        <enabled>false</enabled>
-                        <updatePolicy>never</updatePolicy>
-                        <checksumPolicy>fail</checksumPolicy>
-                    </snapshots>
-                </repository>
-            </repositories>
-            <properties>
-                <!-- Vendor-specific version number included here as default,
-                    should be overridden on the command-line <hadoop.version>2.7.1.2.4.0.0-169</hadoop.version> -->
-            </properties>
-        </profile>
-        <profile>
-            <!-- This profile will add the MapR repository for resolving
-                MapR Hadoop artifacts for the Hadoop bundles -->
-            <id>mapr</id>
-            <repositories>
-                <repository>
-                    <id>mapr-releases</id>
-                    <name>MapR Repository</name>
-                    <url>https://repository.mapr.com/maven/</url>
-                    <snapshots>
-                        <enabled>false</enabled>
-                    </snapshots>
-                    <releases>
-                        <enabled>true</enabled>
-                    </releases>
-                </repository>
-            </repositories>
-            <properties>
-                <!-- Vendor-specific version number included here as default,
-                    should be overridden on the command-line <hadoop.version>2.7.0-mapr-1602</hadoop.version> -->
-            </properties>
-        </profile>
-        <profile>
-            <!-- This profile will add the Cloudera repository for resolving
-                Cloudera Distribution of Hadoop (CDH) artifacts for the Hadoop bundles -->
-            <id>cloudera</id>
-            <repositories>
-                <repository>
-                    <id>cloudera-repo</id>
-                    <name>Cloudera Repository</name>
-                    <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
-                    <releases>
-                        <enabled>true</enabled>
-                    </releases>
-                    <snapshots>
-                        <enabled>false</enabled>
-                    </snapshots>
-                </repository>
-            </repositories>
-            <properties>
-                <!-- Vendor-specific version number included here as default,
-                    should be overridden on the command-line <hadoop.version>2.6.0-cdh5.8.1</hadoop.version> -->
-            </properties>
         </profile>
         <profile>
             <!-- Run "mvn validate -P dependency-check" to generate dependency-check-report.html in the target directory -->

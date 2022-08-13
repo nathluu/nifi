@@ -101,6 +101,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -129,9 +130,11 @@ public class NiFiClientUtil {
         return client;
     }
 
-    public void startProcessor(final ProcessorEntity currentEntity) throws NiFiClientException, IOException {
+    public ProcessorEntity startProcessor(final ProcessorEntity currentEntity) throws NiFiClientException, IOException, InterruptedException {
+        waitForValidationCompleted(currentEntity);
+
         currentEntity.setDisconnectedNodeAcknowledged(true);
-        getProcessorClient().startProcessor(currentEntity);
+        return getProcessorClient().startProcessor(currentEntity);
     }
 
     public void stopProcessor(final ProcessorEntity currentEntity) throws NiFiClientException, IOException, InterruptedException {
@@ -475,6 +478,19 @@ public class NiFiClientUtil {
         }
     }
 
+    public void waitForValidationCompleted(final ProcessorEntity processorEntity) throws NiFiClientException, IOException, InterruptedException {
+        String validationStatus;
+        do {
+            final ProcessorEntity currentEntity = getProcessorClient().getProcessor(processorEntity.getId());
+            validationStatus = currentEntity.getComponent().getValidationStatus();
+
+            if (validationStatus.equals(ProcessorDTO.VALIDATING)) {
+                logger.debug("Waiting for Processor {} to finish validating...", processorEntity.getId());
+                Thread.sleep(100L);
+            }
+        } while (Objects.equals(validationStatus, ProcessorDTO.VALIDATING));
+    }
+
     public void waitForRunningProcessor(final String processorId) throws InterruptedException, IOException, NiFiClientException {
         waitForProcessorState(processorId, "RUNNING");
     }
@@ -550,6 +566,20 @@ public class NiFiClientUtil {
         return nifiClient.getControllerServicesClient().updateControllerService(entity);
     }
 
+    public ActivateControllerServicesEntity enableControllerServices(final String groupId, final boolean waitForEnabled) throws NiFiClientException, IOException {
+        final ActivateControllerServicesEntity activateControllerServicesEntity = new ActivateControllerServicesEntity();
+        activateControllerServicesEntity.setId(groupId);
+        activateControllerServicesEntity.setState(ActivateControllerServicesEntity.STATE_ENABLED);
+        activateControllerServicesEntity.setDisconnectedNodeAcknowledged(true);
+
+        final ActivateControllerServicesEntity activateControllerServices = nifiClient.getFlowClient().activateControllerServices(activateControllerServicesEntity);
+        if (waitForEnabled) {
+            waitForControllerSerivcesEnabled(groupId);
+        }
+
+        return activateControllerServices;
+    }
+
     public ControllerServiceEntity enableControllerService(final ControllerServiceEntity entity) throws NiFiClientException, IOException {
         final ControllerServiceRunStatusEntity runStatusEntity = new ControllerServiceRunStatusEntity();
         runStatusEntity.setState("ENABLED");
@@ -592,7 +622,9 @@ public class NiFiClientUtil {
         return counterValues;
     }
 
-    public ScheduleComponentsEntity startProcessGroupComponents(final String groupId) throws NiFiClientException, IOException {
+    public ScheduleComponentsEntity startProcessGroupComponents(final String groupId) throws NiFiClientException, IOException, InterruptedException {
+        waitForAllProcessorValidationToComplete(groupId);
+
         final ScheduleComponentsEntity scheduleComponentsEntity = new ScheduleComponentsEntity();
         scheduleComponentsEntity.setId(groupId);
         scheduleComponentsEntity.setState("RUNNING");
@@ -600,6 +632,30 @@ public class NiFiClientUtil {
         final ScheduleComponentsEntity scheduleEntity = nifiClient.getFlowClient().scheduleProcessGroupComponents(groupId, scheduleComponentsEntity);
 
         return scheduleEntity;
+    }
+
+    private void waitForAllProcessorValidationToComplete(final String groupId) throws NiFiClientException, IOException, InterruptedException {
+        final Set<ProcessorEntity> processors = findAllProcessors(groupId);
+
+        for (final ProcessorEntity processor : processors) {
+            waitForValidationCompleted(processor);
+        }
+    }
+
+    private Set<ProcessorEntity> findAllProcessors(final String groupId) throws NiFiClientException, IOException {
+        final Set<ProcessorEntity> processors = new HashSet<>();
+        findAllProcessors(groupId, processors);
+        return processors;
+    }
+
+    private void findAllProcessors(final String groupId, final Set<ProcessorEntity> allProcessors) throws NiFiClientException, IOException {
+        final ProcessGroupFlowEntity flowEntity = nifiClient.getFlowClient().getProcessGroup(groupId);
+        final FlowDTO flowDto = flowEntity.getProcessGroupFlow().getFlow();
+        allProcessors.addAll(flowDto.getProcessors());
+
+        for (final ProcessGroupEntity childGroup : flowDto.getProcessGroups()) {
+            findAllProcessors(childGroup.getId(), allProcessors);
+        }
     }
 
     public ScheduleComponentsEntity stopProcessGroupComponents(final String groupId) throws NiFiClientException, IOException {
@@ -708,13 +764,13 @@ public class NiFiClientUtil {
     public void waitForControllerServiceRunStatus(final String id, final String requestedRunStatus) throws NiFiClientException, IOException {
         while (true) {
             final ControllerServiceEntity serviceEntity = nifiClient.getControllerServicesClient().getControllerService(id);
-            final String runStatus = serviceEntity.getStatus().getRunStatus();
-            if (requestedRunStatus.equals(runStatus)) {
-                logger.info("Controller Service [{}] run status [{}] found", id, runStatus);
+            final String serviceState = serviceEntity.getComponent().getState();
+            if (requestedRunStatus.equals(serviceState)) {
+                logger.info("Controller Service [{}] run status [{}] found", id, serviceState);
                 break;
             }
 
-            logger.info("Controller Service [{}] run status [{}] not matched [{}]: sleeping before retrying", id, runStatus, requestedRunStatus);
+            logger.info("Controller Service [{}] run status [{}] not matched [{}]: sleeping before retrying", id, serviceState, requestedRunStatus);
 
             try {
                 Thread.sleep(500L);
@@ -730,6 +786,10 @@ public class NiFiClientUtil {
 
     public void waitForControllerSerivcesEnabled(final String groupId, final String... serviceIdsOfInterest) throws NiFiClientException, IOException {
         waitForControllerServiceState(groupId, "ENABLED", Arrays.asList(serviceIdsOfInterest));
+    }
+
+    public void waitForControllerSerivcesEnabled(final String groupId, final List<String> serviceIdsOfInterest) throws NiFiClientException, IOException {
+        waitForControllerServiceState(groupId, "ENABLED", serviceIdsOfInterest);
     }
 
     public void waitForControllerServiceState(final String groupId, final String desiredState, final Collection<String> serviceIdsOfInterest) throws NiFiClientException, IOException {
@@ -755,7 +815,7 @@ public class NiFiClientUtil {
     public void waitForControllerServiceValidationStatus(final String controllerServiceId, final String validationStatus) throws NiFiClientException, IOException {
         while (true) {
             final ControllerServiceEntity controllerServiceEntity = nifiClient.getControllerServicesClient().getControllerService(controllerServiceId);
-            final String currentValidationStatus = controllerServiceEntity.getStatus().getValidationStatus();
+            final String currentValidationStatus = controllerServiceEntity.getComponent().getValidationStatus();
             if (validationStatus.equals(currentValidationStatus)) {
                 logger.info("Controller Service ID [{}] Type [{}] Validation Status [{}] matched", controllerServiceId,
                         controllerServiceEntity.getComponent().getType(), validationStatus);
@@ -799,7 +859,7 @@ public class NiFiClientUtil {
 
         return servicesEntity.getControllerServices().stream()
             .filter(svc -> serviceIds == null || serviceIds.isEmpty() || serviceIds.contains(svc.getId()))
-            .filter(svc -> !desiredState.equals(svc.getStatus().getRunStatus()))
+            .filter(svc -> !desiredState.equalsIgnoreCase(svc.getComponent().getState()))
             .collect(Collectors.toList());
     }
 

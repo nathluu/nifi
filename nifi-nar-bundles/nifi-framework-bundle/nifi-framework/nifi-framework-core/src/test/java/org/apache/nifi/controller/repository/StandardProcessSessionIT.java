@@ -35,6 +35,7 @@ import org.apache.nifi.controller.repository.claim.ResourceClaim;
 import org.apache.nifi.controller.repository.claim.ResourceClaimManager;
 import org.apache.nifi.controller.repository.claim.StandardContentClaim;
 import org.apache.nifi.controller.repository.claim.StandardResourceClaimManager;
+import org.apache.nifi.controller.repository.metrics.NopPerformanceTracker;
 import org.apache.nifi.controller.repository.metrics.RingBufferEventRepository;
 import org.apache.nifi.events.EventReporter;
 import org.apache.nifi.flowfile.FlowFile;
@@ -99,6 +100,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -221,7 +223,7 @@ public class StandardProcessSessionIT {
         stateManager.setIgnoreAnnotations(true);
 
         context = new StandardRepositoryContext(connectable, new AtomicLong(0L), contentRepo, flowFileRepo, flowFileEventRepository, counterRepository, provenanceRepo, stateManager);
-        session = new StandardProcessSession(context, () -> false);
+        session = new StandardProcessSession(context, () -> false, new NopPerformanceTracker());
     }
 
     private Connection createConnection() {
@@ -340,7 +342,7 @@ public class StandardProcessSessionIT {
             children.add(child);
         }
 
-        final ProcessSession secondSession = new StandardProcessSession(context, () -> false);
+        final ProcessSession secondSession = new StandardProcessSession(context, () -> false, new NopPerformanceTracker());
         try {
             session.migrate(secondSession, children);
             Assert.fail("Expected a FlowFileHandlingException to be thrown because a child FlowFile was migrated while its parent was not");
@@ -383,7 +385,7 @@ public class StandardProcessSessionIT {
         FlowFile flowFile = session.get();
         assertNotNull(flowFile);
 
-        final ProcessSession secondSession = new StandardProcessSession(context, () -> false);
+        final ProcessSession secondSession = new StandardProcessSession(context, () -> false, new NopPerformanceTracker());
 
         FlowFile clone = session.clone(flowFile);
         session.migrate(secondSession, Collections.singletonList(clone));
@@ -415,6 +417,49 @@ public class StandardProcessSessionIT {
 
         final Set<String> childUuids = children.stream().map(ff -> ff.getAttribute(CoreAttributes.UUID.key())).collect(Collectors.toSet());
         assertEquals(childUuids, new HashSet<>(fork.getChildUuids()));
+    }
+
+    @Test
+    public void testCloneOnMultipleDestinations() {
+        final String originalUuid = "12345678-1234-1234-1234-123456789012";
+        final StandardFlowFileRecord.Builder flowFileRecordBuilder = new StandardFlowFileRecord.Builder()
+            .id(1000L)
+            .addAttribute("uuid", originalUuid)
+            .addAttribute("abc", "xyz")
+            .entryDate(System.currentTimeMillis());
+
+        flowFileQueue.put(flowFileRecordBuilder.build());
+
+        FlowFile flowFile = session.get();
+        assertNotNull(flowFile);
+
+        final List<Connection> connectionList = new ArrayList<>();
+        for (int i=0; i < 3; i++) {
+            connectionList.add(createConnection());
+        }
+
+        when(connectable.getConnections(any(Relationship.class))).thenReturn(new HashSet<>(connectionList));
+
+        session.transfer(flowFile, Relationship.ANONYMOUS);
+        session.commit();
+
+        final List<FlowFileRecord> outputFlowFiles = new ArrayList<>();
+        for (final Connection connection : connectionList) {
+            final FlowFileRecord outputFlowFile = connection.getFlowFileQueue().poll(Collections.emptySet());
+            outputFlowFiles.add(outputFlowFile);
+        }
+
+        assertEquals(3, outputFlowFiles.size());
+
+        final Set<String> uuids = outputFlowFiles.stream()
+            .map(ff -> ff.getAttribute("uuid"))
+            .collect(Collectors.toSet());
+
+        assertEquals(3, uuids.size());
+        assertTrue(uuids.contains(originalUuid));
+
+        final Predicate<FlowFileRecord> attributeAbcMatches = ff -> ff.getAttribute("abc").equals("xyz");
+        assertTrue(outputFlowFiles.stream().allMatch(attributeAbcMatches));
     }
 
     @Test
@@ -1743,7 +1788,7 @@ public class StandardProcessSessionIT {
         session.transfer(ffb, relationship);
         session.commit();
 
-        final ProcessSession newSession = new StandardProcessSession(context, () -> false);
+        final ProcessSession newSession = new StandardProcessSession(context, () -> false, new NopPerformanceTracker());
         FlowFile toUpdate = newSession.get();
         newSession.append(toUpdate, out -> out.write('C'));
 
@@ -1816,7 +1861,7 @@ public class StandardProcessSessionIT {
 
         StandardProcessSession[] standardProcessSessions = new StandardProcessSession[100000];
         for (int i = 0; i < 70000; i++) {
-            standardProcessSessions[i] = new StandardProcessSession(context, () -> false);
+            standardProcessSessions[i] = new StandardProcessSession(context, () -> false, new NopPerformanceTracker());
 
             FlowFile flowFile = standardProcessSessions[i].create();
             final byte[] buff = new byte["Hello".getBytes().length];
@@ -2427,7 +2472,7 @@ public class StandardProcessSessionIT {
         flowFile = session.append(flowFile, out -> out.write("1".getBytes()));
         flowFile = session.append(flowFile, out -> out.write("2".getBytes()));
 
-        final StandardProcessSession newSession = new StandardProcessSession(context, () -> false);
+        final StandardProcessSession newSession = new StandardProcessSession(context, () -> false, new NopPerformanceTracker());
 
         assertTrue(session.isFlowFileKnown(flowFile));
         assertFalse(newSession.isFlowFileKnown(flowFile));
@@ -2459,7 +2504,7 @@ public class StandardProcessSessionIT {
         FlowFile flowFile = session.create();
         flowFile = session.write(flowFile, out -> out.write("Hello".getBytes(StandardCharsets.UTF_8)));
 
-        final StandardProcessSession newSession = new StandardProcessSession(context, () -> false);
+        final StandardProcessSession newSession = new StandardProcessSession(context, () -> false, new NopPerformanceTracker());
 
         when(connectable.getConnections(any(Relationship.class))).thenReturn(Collections.emptySet());
         when(connectable.isAutoTerminated(any(Relationship.class))).thenReturn(true);
@@ -2923,7 +2968,8 @@ public class StandardProcessSessionIT {
         StandardProcessSession session = createSessionForRetry(processor);
 
         final FlowFileRecord flowFileRecord = new StandardFlowFileRecord.Builder()
-                .build();
+            .addAttribute("uuid", "12345678-1234-1234-1234-123456789012")
+            .build();
 
         flowFileQueue.put(flowFileRecord);
 
@@ -2946,7 +2992,8 @@ public class StandardProcessSessionIT {
         final StandardProcessSession session = createSessionForRetry(processor);
 
         final FlowFileRecord flowFileRecord = new StandardFlowFileRecord.Builder()
-                .build();
+            .addAttribute("uuid", "12345678-1234-1234-1234-123456789012")
+            .build();
 
         flowFileQueue.put(flowFileRecord);
 
@@ -3241,7 +3288,7 @@ public class StandardProcessSessionIT {
                 counterRepository,
                 provenanceRepo,
                 stateManager);
-        return new StandardProcessSession(context, () -> false);
+        return new StandardProcessSession(context, () -> false, new NopPerformanceTracker());
 
     }
 

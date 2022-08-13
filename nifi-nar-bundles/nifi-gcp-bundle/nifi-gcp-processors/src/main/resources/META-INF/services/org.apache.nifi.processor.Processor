@@ -22,3 +22,5 @@ org.apache.nifi.processors.gcp.pubsub.lite.PublishGCPubSubLite
 org.apache.nifi.processors.gcp.pubsub.lite.ConsumeGCPubSubLite
 org.apache.nifi.processors.gcp.bigquery.PutBigQueryBatch
 org.apache.nifi.processors.gcp.bigquery.PutBigQueryStreaming
+org.apache.nifi.processors.gcp.drive.ListGoogleDrive
+org.apache.nifi.processors.gcp.drive.FetchGoogleDrive

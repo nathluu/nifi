@@ -18,13 +18,13 @@
     <parent>
         <groupId>org.apache.nifi</groupId>
         <artifactId>nifi-flume-bundle</artifactId>
-        <version>1.17.0-SNAPSHOT</version>
+        <version>1.18.0-SNAPSHOT</version>
     </parent>
     <artifactId>nifi-flume-processors</artifactId>
     <packaging>jar</packaging>
 
     <properties>
-        <flume.version>1.6.0</flume.version>
+        <flume.version>1.10.0</flume.version>
     </properties>
 
     <dependencies>
@@ -39,12 +39,12 @@
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-utils</artifactId>
-            <version>1.17.0-SNAPSHOT</version>
+            <version>1.18.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-flowfile-packager</artifactId>
-            <version>1.17.0-SNAPSHOT</version>
+            <version>1.18.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.apache.flume</groupId>
@@ -96,21 +96,6 @@
         </dependency>
 
         <!-- Flume Sinks -->
-        <dependency>
-            <groupId>org.apache.flume.flume-ng-sinks</groupId>
-            <artifactId>flume-dataset-sink</artifactId>
-            <version>${flume.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -175,11 +160,6 @@
         </dependency>
         <dependency>
             <groupId>org.apache.flume.flume-ng-sinks</groupId>
-            <artifactId>flume-ng-elasticsearch-sink</artifactId>
-            <version>${flume.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flume.flume-ng-sinks</groupId>
             <artifactId>flume-ng-hbase-sink</artifactId>
             <version>${flume.version}</version>
         </dependency>
@@ -197,7 +177,7 @@
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-mock</artifactId>
-            <version>1.17.0-SNAPSHOT</version>
+            <version>1.18.0-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

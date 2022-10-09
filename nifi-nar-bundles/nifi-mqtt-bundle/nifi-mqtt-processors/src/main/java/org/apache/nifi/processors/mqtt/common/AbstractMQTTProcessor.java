@@ -32,6 +32,8 @@ import org.apache.nifi.processor.ProcessSessionFactory;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.security.util.TlsException;
+import org.apache.nifi.serialization.RecordReaderFactory;
+import org.apache.nifi.serialization.RecordSetWriterFactory;
 import org.apache.nifi.ssl.SSLContextService;
 
 import java.net.URI;
@@ -42,6 +44,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.EnumUtils.isValidEnumIgnoreCase;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
@@ -63,7 +67,7 @@ public abstract class AbstractMQTTProcessor extends AbstractSessionFactoryProces
 
     protected MqttClientProperties clientProperties;
 
-    protected MqttClientFactory mqttClientFactory = new MqttClientFactory();
+    protected MqttClientFactory mqttClientFactory;
     protected MqttClient mqttClient;
 
     public ProcessSessionFactory processSessionFactory;
@@ -76,24 +80,8 @@ public abstract class AbstractMQTTProcessor extends AbstractSessionFactoryProces
         return new ValidationResult.Builder().subject(subject).valid(true).build();
     };
 
-    public static final Validator BROKER_VALIDATOR = (subject, input, context) -> {
-        try {
-            URI brokerURI = new URI(input);
-            if (!EMPTY.equals(brokerURI.getPath())) {
-                return new ValidationResult.Builder().subject(subject).valid(false).explanation("the broker URI cannot have a path. It currently is: " + brokerURI.getPath()).build();
-            }
-            if (!isValidEnumIgnoreCase(MqttProtocolScheme.class, brokerURI.getScheme())) {
-                return new ValidationResult.Builder().subject(subject).valid(false)
-                        .explanation("scheme is invalid. Supported schemes are: " + getSupportedSchemeList()).build();
-            }
-        } catch (URISyntaxException e) {
-            return new ValidationResult.Builder().subject(subject).valid(false).explanation("it is not valid URI syntax.").build();
-        }
-        return new ValidationResult.Builder().subject(subject).valid(true).build();
-    };
-
     private static String getSupportedSchemeList() {
-        return String.join(", ", Arrays.stream(MqttProtocolScheme.values()).map(value -> value.name().toLowerCase()).toArray(String[]::new));
+        return Arrays.stream(MqttProtocolScheme.values()).map(value -> value.name().toLowerCase()).collect(Collectors.joining(", "));
     }
 
     public static final Validator RETAIN_VALIDATOR = (subject, input, context) -> {
@@ -103,7 +91,6 @@ public abstract class AbstractMQTTProcessor extends AbstractSessionFactoryProces
             return StandardValidators.createAttributeExpressionLanguageValidator(AttributeExpression.ResultType.BOOLEAN, false)
                     .validate(subject, input, context);
         }
-
     };
 
     public static final PropertyDescriptor PROP_MQTT_VERSION = new PropertyDescriptor.Builder()
@@ -121,11 +108,13 @@ public abstract class AbstractMQTTProcessor extends AbstractSessionFactoryProces
 
     public static final PropertyDescriptor PROP_BROKER_URI = new PropertyDescriptor.Builder()
             .name("Broker URI")
-            .description("The URI to use to connect to the MQTT broker (e.g. tcp://localhost:1883). The 'tcp', 'ssl', 'ws' and 'wss' schemes are supported. In order to use 'ssl', the SSL Context " +
-                    "Service property must be set.")
+            .description("Broker URI(s)")
+            .description("The URI(s) to use to connect to the MQTT broker (e.g., tcp://localhost:1883). The 'tcp', 'ssl', 'ws' and 'wss' schemes are supported. " +
+                    "In order to use 'ssl', the SSL Context Service property must be set. When a comma-separated URI list is set (e.g., tcp://localhost:1883,tcp://localhost:1884), " +
+                    "the processor will use a round-robin algorithm to connect to the brokers on connection failure.")
             .required(true)
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
-            .addValidator(BROKER_VALIDATOR)
+            .addValidator(StandardValidators.NON_BLANK_VALIDATOR)
             .build();
 
     public static final PropertyDescriptor PROP_CLIENTID = new PropertyDescriptor.Builder()
@@ -159,36 +148,41 @@ public abstract class AbstractMQTTProcessor extends AbstractSessionFactoryProces
             .identifiesControllerService(SSLContextService.class)
             .build();
 
-    public static final PropertyDescriptor PROP_LAST_WILL_TOPIC = new PropertyDescriptor.Builder()
-            .name("Last Will Topic")
-            .description("The topic to send the client's Last Will to. If the Last Will topic and message are not set then a Last Will will not be sent.")
+    public static final PropertyDescriptor PROP_LAST_WILL_MESSAGE = new PropertyDescriptor.Builder()
+            .name("Last Will Message")
+            .description("The message to send as the client's Last Will.")
             .required(false)
             .addValidator(StandardValidators.NON_BLANK_VALIDATOR)
             .build();
 
-    public static final PropertyDescriptor PROP_LAST_WILL_MESSAGE = new PropertyDescriptor.Builder()
-            .name("Last Will Message")
-            .description("The message to send as the client's Last Will. If the Last Will topic and message are not set then a Last Will will not be sent.")
-            .required(false)
+    public static final PropertyDescriptor PROP_LAST_WILL_TOPIC = new PropertyDescriptor.Builder()
+            .name("Last Will Topic")
+            .description("The topic to send the client's Last Will to.")
+            .required(true)
             .addValidator(StandardValidators.NON_BLANK_VALIDATOR)
+            .dependsOn(PROP_LAST_WILL_MESSAGE)
             .build();
 
     public static final PropertyDescriptor PROP_LAST_WILL_RETAIN = new PropertyDescriptor.Builder()
             .name("Last Will Retain")
-            .description("Whether to retain the client's Last Will. If the Last Will topic and message are not set then a Last Will will not be sent.")
-            .required(false)
+            .description("Whether to retain the client's Last Will.")
+            .required(true)
             .allowableValues("true", "false")
+            .defaultValue("false")
+            .dependsOn(PROP_LAST_WILL_MESSAGE)
             .build();
 
     public static final PropertyDescriptor PROP_LAST_WILL_QOS = new PropertyDescriptor.Builder()
             .name("Last Will QoS Level")
-            .description("QoS level to be used when publishing the Last Will Message")
-            .required(false)
+            .description("QoS level to be used when publishing the Last Will Message.")
+            .required(true)
             .allowableValues(
                     ALLOWABLE_VALUE_QOS_0,
                     ALLOWABLE_VALUE_QOS_1,
                     ALLOWABLE_VALUE_QOS_2
             )
+            .defaultValue(ALLOWABLE_VALUE_QOS_0.getValue())
+            .dependsOn(PROP_LAST_WILL_MESSAGE)
             .build();
 
     public static final PropertyDescriptor PROP_CLEAN_SESSION = new PropertyDescriptor.Builder()
@@ -232,24 +226,19 @@ public abstract class AbstractMQTTProcessor extends AbstractSessionFactoryProces
             .addValidator(StandardValidators.POSITIVE_INTEGER_VALIDATOR)
             .build();
 
-    public static List<PropertyDescriptor> getAbstractPropertyDescriptors() {
-        final List<PropertyDescriptor> descriptors = new ArrayList<>();
-        descriptors.add(PROP_BROKER_URI);
-        descriptors.add(PROP_CLIENTID);
-        descriptors.add(PROP_USERNAME);
-        descriptors.add(PROP_PASSWORD);
-        descriptors.add(PROP_SSL_CONTEXT_SERVICE);
-        descriptors.add(PROP_LAST_WILL_TOPIC);
-        descriptors.add(PROP_LAST_WILL_MESSAGE);
-        descriptors.add(PROP_LAST_WILL_RETAIN);
-        descriptors.add(PROP_LAST_WILL_QOS);
-        descriptors.add(PROP_CLEAN_SESSION);
-        descriptors.add(PROP_SESSION_EXPIRY_INTERVAL);
-        descriptors.add(PROP_MQTT_VERSION);
-        descriptors.add(PROP_CONN_TIMEOUT);
-        descriptors.add(PROP_KEEP_ALIVE_INTERVAL);
-        return descriptors;
-    }
+    public static final PropertyDescriptor BASE_RECORD_READER = new PropertyDescriptor.Builder()
+            .name("record-reader")
+            .displayName("Record Reader")
+            .identifiesControllerService(RecordReaderFactory.class)
+            .required(false)
+            .build();
+
+    public static final PropertyDescriptor BASE_RECORD_WRITER = new PropertyDescriptor.Builder()
+            .name("record-writer")
+            .displayName("Record Writer")
+            .identifiesControllerService(RecordSetWriterFactory.class)
+            .required(false)
+            .build();
 
     @Override
     public Collection<ValidationResult> customValidate(final ValidationContext validationContext) {
@@ -261,30 +250,45 @@ public abstract class AbstractMQTTProcessor extends AbstractSessionFactoryProces
             results.add(new ValidationResult.Builder().subject("Username and Password").valid(false).explanation("if username or password is set, both must be set.").build());
         }
 
-        final boolean lastWillTopicSet = validationContext.getProperty(PROP_LAST_WILL_TOPIC).isSet();
-        final boolean lastWillMessageSet = validationContext.getProperty(PROP_LAST_WILL_MESSAGE).isSet();
+        try {
+            final List<URI> brokerUris = parseBrokerUris(validationContext.getProperty(PROP_BROKER_URI).evaluateAttributeExpressions().getValue());
 
-        final boolean lastWillRetainSet = validationContext.getProperty(PROP_LAST_WILL_RETAIN).isSet();
-        final boolean lastWillQosSet = validationContext.getProperty(PROP_LAST_WILL_QOS).isSet();
-
-        // If any of the Last Will Properties are set
-        if (lastWillTopicSet || lastWillMessageSet || lastWillRetainSet || lastWillQosSet) {
-            // And any are not set
-            if (!(lastWillTopicSet && lastWillMessageSet && lastWillRetainSet && lastWillQosSet)) {
-                // Then mark as invalid
-                results.add(new ValidationResult.Builder().subject("Last Will Properties").valid(false).explanation("if any of the Last Will Properties (message, topic, retain and QoS) are " +
-                        "set, all must be set.").build());
+            boolean sameSchemeValidationErrorAdded = false;
+            boolean sslValidationErrorAdded = false;
+            for(URI brokerUri : brokerUris) {
+                if (!EMPTY.equals(brokerUri.getPath())) {
+                    results.add(new ValidationResult.Builder().subject(PROP_BROKER_URI.getName()).valid(false)
+                            .explanation("the broker URI cannot have a path. It currently is: " + brokerUri.getPath()).build());
+                }
+                final String scheme = brokerUri.getScheme();
+                if (!isValidEnumIgnoreCase(MqttProtocolScheme.class, scheme)) {
+                    results.add(new ValidationResult.Builder().subject(PROP_BROKER_URI.getName()).valid(false)
+                            .explanation(scheme + " is an invalid scheme. Supported schemes are: " + getSupportedSchemeList()).build());
+                }
+                if (!scheme.equals(brokerUris.get(0).getScheme())) {
+                    if (!sameSchemeValidationErrorAdded) {
+                        results.add(new ValidationResult.Builder().subject(PROP_BROKER_URI.getName()).valid(false).explanation("all URIs should use the same scheme.").build());
+                        sameSchemeValidationErrorAdded = true;
+                    }
+                }
+                if (scheme.equalsIgnoreCase("ssl") && !validationContext.getProperty(PROP_SSL_CONTEXT_SERVICE).isSet()) {
+                    if (!sslValidationErrorAdded) {
+                        results.add(new ValidationResult.Builder().subject(PROP_SSL_CONTEXT_SERVICE.getName() + " or " + PROP_BROKER_URI.getName()).valid(false)
+                                .explanation("if the 'ssl' scheme is used in the broker URI, the SSL Context Service must be set.").build());
+                        sslValidationErrorAdded = true;
+                    }
+                }
             }
+        } catch (Exception e) {
+            results.add(new ValidationResult.Builder().subject(PROP_BROKER_URI.getName()).valid(false)
+                    .explanation("it is not valid URI syntax.").build());
         }
 
-        try {
-            URI brokerURI = new URI(validationContext.getProperty(PROP_BROKER_URI).evaluateAttributeExpressions().getValue());
-            if (brokerURI.getScheme().equalsIgnoreCase("ssl") && !validationContext.getProperty(PROP_SSL_CONTEXT_SERVICE).isSet()) {
-                results.add(new ValidationResult.Builder().subject(PROP_SSL_CONTEXT_SERVICE.getName() + " or " + PROP_BROKER_URI.getName()).valid(false).explanation("if the 'ssl' scheme is used in " +
-                        "the broker URI, the SSL Context Service must be set.").build());
-            }
-        } catch (URISyntaxException e) {
-            results.add(new ValidationResult.Builder().subject(PROP_BROKER_URI.getName()).valid(false).explanation("it is not valid URI syntax.").build());
+        final boolean readerIsSet = validationContext.getProperty(BASE_RECORD_READER).isSet();
+        final boolean writerIsSet = validationContext.getProperty(BASE_RECORD_WRITER).isSet();
+        if ((readerIsSet && !writerIsSet) || (!readerIsSet && writerIsSet)) {
+            results.add(new ValidationResult.Builder().subject("Record Reader and Writer").valid(false)
+                    .explanation("both properties must be set when used.").build());
         }
 
         return results;
@@ -292,6 +296,7 @@ public abstract class AbstractMQTTProcessor extends AbstractSessionFactoryProces
 
     protected void onScheduled(final ProcessContext context) {
         clientProperties = getMqttClientProperties(context);
+        mqttClientFactory = new MqttClientFactory(clientProperties, logger);
     }
 
     protected void stopClient() {
@@ -317,7 +322,7 @@ public abstract class AbstractMQTTProcessor extends AbstractSessionFactoryProces
     }
 
     protected MqttClient createMqttClient() throws TlsException {
-        return mqttClientFactory.create(clientProperties, getLogger());
+        return mqttClientFactory.create();
     }
 
 
@@ -346,11 +351,8 @@ public abstract class AbstractMQTTProcessor extends AbstractSessionFactoryProces
     protected MqttClientProperties getMqttClientProperties(final ProcessContext context) {
         final MqttClientProperties clientProperties = new MqttClientProperties();
 
-        try {
-            clientProperties.setBrokerUri(new URI(context.getProperty(PROP_BROKER_URI).evaluateAttributeExpressions().getValue()));
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Invalid Broker URI", e);
-        }
+        final String rawBrokerUris = context.getProperty(PROP_BROKER_URI).evaluateAttributeExpressions().getValue();
+        clientProperties.setBrokerUris(parseBrokerUris(rawBrokerUris));
 
         String clientId = context.getProperty(PROP_CLIENTID).evaluateAttributeExpressions().getValue();
         if (clientId == null) {
@@ -366,17 +368,17 @@ public abstract class AbstractMQTTProcessor extends AbstractSessionFactoryProces
         clientProperties.setKeepAliveInterval(context.getProperty(PROP_KEEP_ALIVE_INTERVAL).asInteger());
         clientProperties.setConnectionTimeout(context.getProperty(PROP_CONN_TIMEOUT).asInteger());
 
-        final PropertyValue sslProp = context.getProperty(PROP_SSL_CONTEXT_SERVICE);
-        if (sslProp.isSet()) {
-            final SSLContextService sslContextService = (SSLContextService) sslProp.asControllerService();
+        final SSLContextService sslContextService = context.getProperty(PROP_SSL_CONTEXT_SERVICE).asControllerService(SSLContextService.class);
+        if (sslContextService != null) {
             clientProperties.setTlsConfiguration(sslContextService.createTlsConfiguration());
         }
 
-        clientProperties.setLastWillTopic(context.getProperty(PROP_LAST_WILL_TOPIC).getValue());
-        clientProperties.setLastWillMessage(context.getProperty(PROP_LAST_WILL_MESSAGE).getValue());
-        final PropertyValue lastWillRetain = context.getProperty(PROP_LAST_WILL_RETAIN);
-        clientProperties.setLastWillRetain(lastWillRetain.isSet() ? lastWillRetain.asBoolean() : false);
-        clientProperties.setLastWillQos(context.getProperty(PROP_LAST_WILL_QOS).asInteger());
+        if (context.getProperty(PROP_LAST_WILL_MESSAGE).isSet()) {
+            clientProperties.setLastWillMessage(context.getProperty(PROP_LAST_WILL_MESSAGE).getValue());
+            clientProperties.setLastWillTopic(context.getProperty(PROP_LAST_WILL_TOPIC).getValue());
+            clientProperties.setLastWillRetain(context.getProperty(PROP_LAST_WILL_RETAIN).asBoolean());
+            clientProperties.setLastWillQos(context.getProperty(PROP_LAST_WILL_QOS).asInteger());
+        }
 
         final PropertyValue usernameProp = context.getProperty(PROP_USERNAME);
         if (usernameProp.isSet()) {
@@ -386,5 +388,20 @@ public abstract class AbstractMQTTProcessor extends AbstractSessionFactoryProces
         clientProperties.setPassword(context.getProperty(PROP_PASSWORD).getValue());
 
         return clientProperties;
+    }
+
+    private static List<URI> parseBrokerUris(String brokerUris) {
+        final List<URI> uris = Pattern.compile(",").splitAsStream(brokerUris)
+                .map(AbstractMQTTProcessor::parseUri)
+                .collect(Collectors.toList());
+        return uris;
+    }
+
+    private static URI parseUri(String uri) {
+        try {
+            return new URI(uri);
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid Broker URI", e);
+        }
     }
 }

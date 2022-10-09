@@ -66,6 +66,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -162,30 +163,25 @@ public class ConsumeMQTT extends AbstractMQTTProcessor implements MqttCallback {
             .build();
 
     public static final PropertyDescriptor RECORD_READER = new PropertyDescriptor.Builder()
-            .name("record-reader")
-            .displayName("Record Reader")
-            .description("The Record Reader to use for received messages")
-            .identifiesControllerService(RecordReaderFactory.class)
-            .required(false)
+            .fromPropertyDescriptor(BASE_RECORD_READER)
+            .description("The Record Reader to use for parsing received MQTT Messages into Records.")
             .build();
 
     public static final PropertyDescriptor RECORD_WRITER = new PropertyDescriptor.Builder()
-            .name("record-writer")
-            .displayName("Record Writer")
-            .description("The Record Writer to use in order to serialize the data before writing it to a FlowFile")
-            .identifiesControllerService(RecordSetWriterFactory.class)
-            .required(false)
+            .fromPropertyDescriptor(BASE_RECORD_WRITER)
+            .description("The Record Writer to use for serializing Records before writing them to a FlowFile.")
             .build();
 
     public static final PropertyDescriptor ADD_ATTRIBUTES_AS_FIELDS = new PropertyDescriptor.Builder()
             .name("add-attributes-as-fields")
             .displayName("Add attributes as fields")
-            .description("If using the Records reader/writer and if setting this property to true, default fields "
+            .description("If setting this property to true, default fields "
                     + "are going to be added in each record: _topic, _qos, _isDuplicate, _isRetained.")
             .required(true)
             .defaultValue("true")
             .allowableValues("true", "false")
             .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
+            .dependsOn(RECORD_READER)
             .build();
 
     public static final PropertyDescriptor MESSAGE_DEMARCATOR = new PropertyDescriptor.Builder()
@@ -220,26 +216,35 @@ public class ConsumeMQTT extends AbstractMQTTProcessor implements MqttCallback {
             .autoTerminateDefault(true) // to make sure flow are still valid after upgrades
             .build();
 
-    private static final List<PropertyDescriptor> descriptors;
-    private static final Set<Relationship> relationships;
+    private static final List<PropertyDescriptor> PROPERTIES = Collections.unmodifiableList(Arrays.asList(
+            PROP_BROKER_URI,
+            PROP_MQTT_VERSION,
+            PROP_USERNAME,
+            PROP_PASSWORD,
+            PROP_SSL_CONTEXT_SERVICE,
+            PROP_CLEAN_SESSION,
+            PROP_SESSION_EXPIRY_INTERVAL,
+            PROP_CLIENTID,
+            PROP_GROUPID,
+            PROP_TOPIC_FILTER,
+            PROP_QOS,
+            RECORD_READER,
+            RECORD_WRITER,
+            ADD_ATTRIBUTES_AS_FIELDS,
+            MESSAGE_DEMARCATOR,
+            PROP_CONN_TIMEOUT,
+            PROP_KEEP_ALIVE_INTERVAL,
+            PROP_LAST_WILL_MESSAGE,
+            PROP_LAST_WILL_TOPIC,
+            PROP_LAST_WILL_RETAIN,
+            PROP_LAST_WILL_QOS,
+            PROP_MAX_QUEUE_SIZE
+    ));
 
-    static {
-        final List<PropertyDescriptor> innerDescriptorsList = getAbstractPropertyDescriptors();
-        innerDescriptorsList.add(PROP_GROUPID);
-        innerDescriptorsList.add(PROP_TOPIC_FILTER);
-        innerDescriptorsList.add(PROP_QOS);
-        innerDescriptorsList.add(PROP_MAX_QUEUE_SIZE);
-        innerDescriptorsList.add(RECORD_READER);
-        innerDescriptorsList.add(RECORD_WRITER);
-        innerDescriptorsList.add(ADD_ATTRIBUTES_AS_FIELDS);
-        innerDescriptorsList.add(MESSAGE_DEMARCATOR);
-        descriptors = Collections.unmodifiableList(innerDescriptorsList);
-
-        final Set<Relationship> innerRelationshipsSet = new HashSet<>();
-        innerRelationshipsSet.add(REL_MESSAGE);
-        innerRelationshipsSet.add(REL_PARSE_FAILURE);
-        relationships = Collections.unmodifiableSet(innerRelationshipsSet);
-    }
+    private static final Set<Relationship> RELATIONSHIPS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            REL_MESSAGE,
+            REL_PARSE_FAILURE
+    )));
 
     @Override
     public void onPropertyModified(PropertyDescriptor descriptor, String oldValue, String newValue) {
@@ -292,16 +297,10 @@ public class ConsumeMQTT extends AbstractMQTTProcessor implements MqttCallback {
         }
 
         final boolean readerIsSet = context.getProperty(RECORD_READER).isSet();
-        final boolean writerIsSet = context.getProperty(RECORD_WRITER).isSet();
-        if ((readerIsSet && !writerIsSet) || (!readerIsSet && writerIsSet)) {
-            results.add(new ValidationResult.Builder().subject("Reader and Writer").valid(false)
-                    .explanation("both Record Reader and Writer must be set when used.").build());
-        }
-
         final boolean demarcatorIsSet = context.getProperty(MESSAGE_DEMARCATOR).isSet();
         if (readerIsSet && demarcatorIsSet) {
             results.add(new ValidationResult.Builder().subject("Reader and Writer").valid(false)
-                    .explanation("Message Demarcator and Record Reader/Writer cannot be used at the same time.").build());
+                    .explanation("message Demarcator and Record Reader/Writer cannot be used at the same time.").build());
         }
 
         return results;
@@ -314,12 +313,12 @@ public class ConsumeMQTT extends AbstractMQTTProcessor implements MqttCallback {
 
     @Override
     public Set<Relationship> getRelationships() {
-        return relationships;
+        return RELATIONSHIPS;
     }
 
     @Override
     public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
-        return descriptors;
+        return PROPERTIES;
     }
 
     @Override
@@ -351,7 +350,7 @@ public class ConsumeMQTT extends AbstractMQTTProcessor implements MqttCallback {
     public void onStopped(final ProcessContext context) {
         if (mqttQueue != null && !mqttQueue.isEmpty() && processSessionFactory != null) {
             logger.info("Finishing processing leftover messages");
-            ProcessSession session = processSessionFactory.createSession();
+            final ProcessSession session = processSessionFactory.createSession();
             if (context.getProperty(RECORD_READER).isSet()) {
                 transferQueueRecord(context, session);
             } else if (context.getProperty(MESSAGE_DEMARCATOR).isSet()) {
@@ -397,17 +396,12 @@ public class ConsumeMQTT extends AbstractMQTTProcessor implements MqttCallback {
         // NOTE: This method is called when isConnected returns false which can happen when the client is null, or when it is
         // non-null but not connected, so we need to handle each case and only create a new client when it is null
         try {
-            if (mqttClient == null) {
-                mqttClient = createMqttClient();
-                mqttClient.setCallback(this);
-            }
-
-            if (!mqttClient.isConnected()) {
-                mqttClient.connect();
-                mqttClient.subscribe(topicPrefix + topicFilter, qos);
-            }
+            mqttClient = createMqttClient();
+            mqttClient.setCallback(this);
+            mqttClient.connect();
+            mqttClient.subscribe(topicPrefix + topicFilter, qos);
         } catch (Exception e) {
-            logger.error("Connection to {} lost (or was never connected) and connection failed. Yielding processor", new Object[]{clientProperties.getBroker()}, e);
+            logger.error("Connection failed to {}. Yielding processor", clientProperties.getRawBrokerUris(), e);
             mqttClient = null; // prevent stucked processor when subscribe fails
             context.yield();
         }
@@ -431,7 +425,7 @@ public class ConsumeMQTT extends AbstractMQTTProcessor implements MqttCallback {
         final byte[] demarcator = context.getProperty(MESSAGE_DEMARCATOR).evaluateAttributeExpressions().getValue().getBytes(StandardCharsets.UTF_8);
 
         FlowFile messageFlowfile = session.create();
-        session.putAttribute(messageFlowfile, BROKER_ATTRIBUTE_KEY, clientProperties.getBroker());
+        session.putAttribute(messageFlowfile, BROKER_ATTRIBUTE_KEY, clientProperties.getRawBrokerUris());
 
         messageFlowfile = session.append(messageFlowfile, out -> {
             int i = 0;
@@ -461,8 +455,8 @@ public class ConsumeMQTT extends AbstractMQTTProcessor implements MqttCallback {
     private FlowFile createFlowFileAndPopulateAttributes(ProcessSession session, ReceivedMqttMessage mqttMessage) {
         FlowFile messageFlowfile = session.create();
 
-        Map<String, String> attrs = new HashMap<>();
-        attrs.put(BROKER_ATTRIBUTE_KEY, clientProperties.getBroker());
+        final Map<String, String> attrs = new HashMap<>();
+        attrs.put(BROKER_ATTRIBUTE_KEY, clientProperties.getRawBrokerUris());
         attrs.put(TOPIC_ATTRIBUTE_KEY, mqttMessage.getTopic());
         attrs.put(QOS_ATTRIBUTE_KEY, String.valueOf(mqttMessage.getQos()));
         attrs.put(IS_DUPLICATE_ATTRIBUTE_KEY, String.valueOf(mqttMessage.isDuplicate()));
@@ -476,8 +470,8 @@ public class ConsumeMQTT extends AbstractMQTTProcessor implements MqttCallback {
         final RecordReaderFactory readerFactory = context.getProperty(RECORD_READER).asControllerService(RecordReaderFactory.class);
         final RecordSetWriterFactory writerFactory = context.getProperty(RECORD_WRITER).asControllerService(RecordSetWriterFactory.class);
 
-        FlowFile flowFile = session.create();
-        session.putAttribute(flowFile, BROKER_ATTRIBUTE_KEY, clientProperties.getBroker());
+        final FlowFile flowFile = session.create();
+        session.putAttribute(flowFile, BROKER_ATTRIBUTE_KEY, clientProperties.getRawBrokerUris());
 
         final Map<String, String> attributes = new HashMap<>();
         final AtomicInteger recordCount = new AtomicInteger();
@@ -595,7 +589,7 @@ public class ConsumeMQTT extends AbstractMQTTProcessor implements MqttCallback {
                 logger.error("Could not add {} message(s) back into the internal queue, this could mean data loss", numberOfMessages);
             }
 
-            throw new ProcessException("Could not process data received from the MQTT broker(s): " + clientProperties.getBroker(), e);
+            throw new ProcessException("Could not process data received from the MQTT broker(s): " + clientProperties.getRawBrokerUris(), e);
         } finally {
             closeWriter(writer);
         }
@@ -611,7 +605,7 @@ public class ConsumeMQTT extends AbstractMQTTProcessor implements MqttCallback {
 
         final int count = recordCount.get();
         session.adjustCounter(COUNTER_RECORDS_PROCESSED, count, false);
-        getLogger().info("Successfully processed {} records for {}", count, flowFile);
+        logger.info("Successfully processed {} records for {}", count, flowFile);
     }
 
     private void closeWriter(final RecordSetWriter writer) {
@@ -625,8 +619,7 @@ public class ConsumeMQTT extends AbstractMQTTProcessor implements MqttCallback {
     }
 
     private String getTransitUri(String... appends) {
-        String broker = clientProperties.getBrokerUri().toString();
-        StringBuilder stringBuilder = new StringBuilder(broker.endsWith("/") ? broker : broker + "/");
+        final StringBuilder stringBuilder = new StringBuilder(clientProperties.getProvenanceFormattedBrokerUris()).append("/");
         for (String append : appends) {
             stringBuilder.append(append);
         }
@@ -635,14 +628,14 @@ public class ConsumeMQTT extends AbstractMQTTProcessor implements MqttCallback {
 
     @Override
     public void connectionLost(Throwable cause) {
-        logger.error("Connection to {} lost", clientProperties.getBroker(), cause);
+        logger.error("Connection to {} lost", clientProperties.getRawBrokerUris(), cause);
     }
 
     @Override
     public void messageArrived(ReceivedMqttMessage message) {
         if (logger.isDebugEnabled()) {
             byte[] payload = message.getPayload();
-            String text = new String(payload, StandardCharsets.UTF_8);
+            final String text = new String(payload, StandardCharsets.UTF_8);
             if (StringUtils.isAsciiPrintable(text)) {
                 logger.debug("Message arrived from topic {}. Payload: {}", message.getTopic(), text);
             } else {

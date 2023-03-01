@@ -36,6 +36,7 @@
                                         <GID>1000</GID>
                                         <NIFI_REGISTRY_VERSION>${project.version}</NIFI_REGISTRY_VERSION>
                                         <NIFI_REGISTRY_BINARY>target/nifi-registry-${project.version}-bin.zip</NIFI_REGISTRY_BINARY>
+                                        <NIFI_TOOLKIT_BINARY>target/nifi-toolkit-${project.version}-bin.zip</NIFI_TOOLKIT_BINARY>
                                     </buildArgs>
                                     <repository>apache/nifi-registry</repository>
                                     <tag>${project.version}-dockermaven</tag>
@@ -55,6 +56,22 @@
                                     <target name="copy assembly to nifi-registry-docker for image build">
                                         <copy todir="${project.basedir}/target" overwrite="true" flatten="true">
                                             <fileset dir="${project.basedir}/../../nifi-registry-assembly/target" includes="*.zip">
+                                                <include name="*.zip" />
+                                            </fileset>
+                                        </copy>
+                                    </target>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>copy-toolkit-for-docker</id>
+                                <phase>process-sources</phase>
+                                <configuration>
+                                    <target name="copy toolkit assembly to nifi-registry-docker for image build">
+                                        <copy todir="${project.basedir}/target" overwrite="true" flatten="true">
+                                            <fileset dir="${project.basedir}/../../../nifi-toolkit/nifi-toolkit-assembly/target" includes="*.zip">
                                                 <include name="*.zip" />
                                             </fileset>
                                         </copy>

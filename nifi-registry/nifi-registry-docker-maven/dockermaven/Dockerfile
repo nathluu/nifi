@@ -22,9 +22,11 @@ LABEL site="https://nifi.apache.org"
 
 ARG NIFI_REGISTRY_BINARY
 ARG NIFI_REGISTRY_VERSION=1.20.0
+ARG NIFI_TOOLKIT_BINARY
 
 ENV NIFI_REGISTRY_BASE_DIR /opt/nifi-registry
 ENV NIFI_REGISTRY_HOME ${NIFI_REGISTRY_BASE_DIR}/nifi-registry-current
+ENV NIFI_TOOLKIT_HOME ${NIFI_REGISTRY_BASE_DIR}/nifi-toolkit-current
 
 ADD sh/ ${NIFI_REGISTRY_BASE_DIR}/scripts/
 RUN chmod -R +x ${NIFI_REGISTRY_BASE_DIR}/scripts/*.sh \
@@ -37,6 +39,12 @@ RUN unzip ${NIFI_REGISTRY_BASE_DIR}/nifi-registry-${NIFI_REGISTRY_VERSION}-bin.z
     && mv ${NIFI_REGISTRY_BASE_DIR}/nifi-registry-${NIFI_REGISTRY_VERSION} ${NIFI_REGISTRY_HOME} \
     && ln -s ${NIFI_REGISTRY_HOME} ${NIFI_REGISTRY_BASE_DIR}/nifi-registry-${NIFI_REGISTRY_VERSION}
 
+COPY $NIFI_TOOLKIT_BINARY $NIFI_REGISTRY_BASE_DIR
+RUN unzip ${NIFI_REGISTRY_BASE_DIR}/nifi-toolkit-${NIFI_REGISTRY_VERSION}-bin.zip -d ${NIFI_REGISTRY_BASE_DIR} \
+    && rm ${NIFI_REGISTRY_BASE_DIR}/nifi-toolkit-${NIFI_REGISTRY_VERSION}-bin.zip \
+    && mv ${NIFI_REGISTRY_BASE_DIR}/nifi-toolkit-${NIFI_REGISTRY_VERSION} ${NIFI_TOOLKIT_HOME} \
+    && ln -s ${NIFI_TOOLKIT_HOME} ${NIFI_REGISTRY_BASE_DIR}/nifi-toolkit-${NIFI_REGISTRY_VERSION}
+
 
 FROM eclipse-temurin:11-jre
 LABEL maintainer="Apache NiFi Registry <dev@nifi.apache.org>"
@@ -47,6 +55,7 @@ ARG GID=1000
 
 ENV NIFI_REGISTRY_BASE_DIR /opt/nifi-registry
 ENV NIFI_REGISTRY_HOME ${NIFI_REGISTRY_BASE_DIR}/nifi-registry-current
+ENV NIFI_TOOLKIT_HOME ${NIFI_REGISTRY_BASE_DIR}/nifi-toolkit-current
 
 COPY --chown=${UID}:${GID} --from=artifactbase $NIFI_REGISTRY_BASE_DIR $NIFI_REGISTRY_BASE_DIR
 

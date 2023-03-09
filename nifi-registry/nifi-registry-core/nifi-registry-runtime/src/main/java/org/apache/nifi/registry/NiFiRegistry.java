@@ -201,11 +201,6 @@ public class NiFiRegistry {
             final Method loadMethod = propsLoaderClass.getMethod("load", String.class);
             final NiFiRegistryProperties properties = (NiFiRegistryProperties) loadMethod.invoke(loaderInstance, nifiRegistryPropertiesFilePath);
             LOGGER.info("Application Properties loaded [{}]", properties.size());
-            LOGGER.info("DLE-Application Properties [{}]", properties);
-            LOGGER.info("DLE-Application Properties getOidcClientId [{}]", properties.getOidcClientId());
-            LOGGER.info("DLE-Application Properties getOidcClientSecret [{}]", properties.getOidcClientSecret());
-            LOGGER.info("DLE-Application Properties getKeyStorePassword [{}]", properties.getKeyStorePassword());
-            LOGGER.info("DLE-Application Properties key [{}]", key);
             return properties;
         } catch (InvocationTargetException wrappedException) {
             final String msg = "There was an issue decrypting protected properties";

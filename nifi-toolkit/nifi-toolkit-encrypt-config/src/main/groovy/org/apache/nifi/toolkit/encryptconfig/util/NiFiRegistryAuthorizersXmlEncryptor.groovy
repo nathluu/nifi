@@ -68,7 +68,7 @@ class NiFiRegistryAuthorizersXmlEncryptor extends XmlEncryptor {
      */
     @Override
     String encrypt(final String plainXmlContent) {
-        String encryptingProperties = "Password,Application ID,Client Password"
+        String encryptingProperties = "Password,Application ID"
         String[] propertyNames = encryptingProperties.split(",")
         // First, mark the XML nodes to encrypt that are specific to authorizers.xml by adding an attribute encryption="none"
         String markedXmlContent = markXmlNodesForEncryption(plainXmlContent, "userGroupProvider", {

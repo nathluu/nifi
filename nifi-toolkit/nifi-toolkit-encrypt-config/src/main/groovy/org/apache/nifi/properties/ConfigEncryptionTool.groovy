@@ -815,7 +815,8 @@ class ConfigEncryptionTool {
             }
             String groupIdentifier = userGroupProvider.identifier.text()
             def passwords = userGroupProvider.property.findAll {
-                ( it.@name =~ "Password" || it.@name =~ "Secret" ) && it.@encryption != ""
+                ( it.@name =~ "Password" || it.@name =~ "Secret" 
+                || it.@name =~ "Application ID") && it.@encryption != ""
             }
 
             if (passwords.isEmpty()) {
@@ -903,6 +904,7 @@ class ConfigEncryptionTool {
 
     String encryptAuthorizers(final String plainXml, final String newKeyHex = keyHex) {
         final SensitivePropertyProviderFactory providerFactory = getSensitivePropertyProviderFactory(newKeyHex)
+        logger.info("Encrypting Authorizers file")
 
         // TODO: Switch to XmlParser & XmlNodePrinter to maintain "empty" element structure
         try {
@@ -915,7 +917,8 @@ class ConfigEncryptionTool {
             }
             String groupIdentifier = userGroupProvider.identifier.text()
             def passwords = userGroupProvider.property.findAll {
-                (it.@name =~ "Password" || it.@name =~ "Secret") && (it.@encryption == "none" || it.@encryption == "") && it.text()
+                (it.@name =~ "Password" || it.@name =~ "Secret" 
+                || it.@name =~ "Application ID") && (it.@encryption == "none" || it.@encryption == "") && it.text()
             }
 
             if (passwords.isEmpty()) {

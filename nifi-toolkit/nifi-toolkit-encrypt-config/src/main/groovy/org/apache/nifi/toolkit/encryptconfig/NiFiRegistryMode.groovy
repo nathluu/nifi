@@ -150,6 +150,9 @@ class NiFiRegistryMode implements ToolMode {
             }
         }
 
+        logger.debug("------BEFORE SAVING-----")
+        logger.debug(authorizersXml);
+        logger.debug("------BEFORE SAVING-----")
         try {
             // Do this as part of a transaction?
             synchronized (this) {

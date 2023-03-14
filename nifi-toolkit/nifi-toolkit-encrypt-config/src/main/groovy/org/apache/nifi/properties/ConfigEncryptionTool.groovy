@@ -819,7 +819,7 @@ class ConfigEncryptionTool {
                 || it.@name =~ "Application ID") && it.@encryption != ""
             }
 
-            if (passwords.isEmpty() {
+            if (passwords.isEmpty()) {
                 if (isVerbose) {
                     logger.info("No encrypted password property elements found in ${filename}")
                 }

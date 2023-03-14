@@ -123,6 +123,8 @@ abstract class XmlEncryptor {
             nodesToEncrypt.each { node ->
                 String groupIdentifier = (String) node.parent().identifier
                 String propertyName = (String) node.@name
+                logger.debug("groupIdentifier: " + groupIdentifier);
+                logger.debug("propertyName: " + propertyName);
                 String encryptedValue = this.encryptionProvider.protect(node.text().trim(), providerFactory.getPropertyContext(groupIdentifier, propertyName))
                 node.@encryption = this.encryptionProvider.getIdentifierKey()
                 node.replaceBody(encryptedValue)

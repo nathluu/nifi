@@ -28,8 +28,14 @@ class NiFiRegistryAuthorizersXmlEncryptor extends XmlEncryptor {
     private static final Logger logger = LoggerFactory.getLogger(NiFiRegistryAuthorizersXmlEncryptor.class)
 
     static final String LDAP_USER_GROUP_PROVIDER_CLASS = "org.apache.nifi.registry.security.ldap.tenants.LdapUserGroupProvider"
+    static final String AZURE_GRAPH_USER_GROUP_PROVIDER_CLASS = "org.apache.nifi.authorization.azure.AzureGraphUserGroupProvider"
+    static final String FILE_USER_GROUP_PROVIDER_CLASS = "org.apache.nifi.registry.security.authorization.file.FileUserGroupProvider"
     private static final String LDAP_USER_GROUP_PROVIDER_REGEX =
             /(?s)<userGroupProvider>(?:(?!<userGroupProvider>).)*?<class>\s*org\.apache\.nifi\.registry\.security\.ldap\.tenants\.LdapUserGroupProvider.*?<\/userGroupProvider>/
+    private static final String AZURE_GRAPH_USER_GROUP_PROVIDER_REGEX =
+                /(?s)<userGroupProvider>(?:(?!<userGroupProvider>).)*?<class>\s*org\.apache\.nifi\.authorization\.azure\.AzureGraphUserGroupProvider.*?<\/userGroupProvider>/
+    private static final String FILE_USER_GROUP_PROVIDER_REGEX =
+                /(?s)<userGroupProvider>(?:(?!<userGroupProvider>).)*?<class>\s*org\.apache\.nifi\.registry\.security\.authorization\.file\.FileUserGroupProvider.*?<\/userGroupProvider>/
     /* Explanation of LDAP_USER_GROUP_PROVIDER_REGEX:
      *   (?s)                             -> single-line mode (i.e., `.` in regex matches newlines)
      *   <userGroupProvider>              -> find occurrence of `<userGroupProvider>` literally (case-sensitive)
@@ -62,15 +68,21 @@ class NiFiRegistryAuthorizersXmlEncryptor extends XmlEncryptor {
      */
     @Override
     String encrypt(final String plainXmlContent) {
+        String encryptingProperties = "Password,Application ID"
+        String[] propertyNames = encryptingProperties.split(",")
         // First, mark the XML nodes to encrypt that are specific to authorizers.xml by adding an attribute encryption="none"
         String markedXmlContent = markXmlNodesForEncryption(plainXmlContent, "userGroupProvider", {
-            it.find {
-                it.'class' as String == LDAP_USER_GROUP_PROVIDER_CLASS
-            }.property.findAll {
-                // Only operate on populated password properties
-                it.@name =~ "Password" && it.text()
-            }
-        })
+            it.find { it.'class' as String == LDAP_USER_GROUP_PROVIDER_CLASS }
+            .property.findAll { propertyNames.any { name -> it.@name =~ name } && it.text() }
+        });
+        markedXmlContent = markXmlNodesForEncryption(markedXmlContent, "userGroupProvider", {
+            it.find { it.'class' as String == AZURE_GRAPH_USER_GROUP_PROVIDER_CLASS }
+            .property.findAll { propertyNames.any { name -> it.@name =~ name } && it.text() }
+        });
+        markedXmlContent = markXmlNodesForEncryption(markedXmlContent, "userGroupProvider", {
+            it.find { it.'class' as String == FILE_USER_GROUP_PROVIDER_CLASS }
+            .property.findAll { propertyNames.any { name -> it.@name =~ name } && it.text() }
+        });
 
         // Now, return the results of the base implementation, which encrypts any node with an encryption="none" attribute
         return super.encrypt(markedXmlContent)
@@ -86,21 +98,31 @@ class NiFiRegistryAuthorizersXmlEncryptor extends XmlEncryptor {
         // Find & replace the userGroupProvider element of the updated content in the original contents
         try {
             def parsedXml = new XmlSlurper().parseText(updatedXmlContent)
-            def provider = parsedXml.userGroupProvider.find { it.'class' as String == LDAP_USER_GROUP_PROVIDER_CLASS }
-            if (provider) {
-                def serializedProvider = new XmlUtil().serialize(provider)
+            def ldapUserGroupProvider = parsedXml.userGroupProvider.find { it.'class' as String == LDAP_USER_GROUP_PROVIDER_CLASS }
+            if (ldapUserGroupProvider) {
+                def serializedProvider = new XmlUtil().serialize(ldapUserGroupProvider)
                 // Remove XML declaration from top
                 serializedProvider = serializedProvider.replaceFirst(XML_DECLARATION_REGEX, "")
                 originalXmlContent = originalXmlContent.replaceFirst(LDAP_USER_GROUP_PROVIDER_REGEX, serializedProvider)
-                return originalXmlContent.split("\n")
-            } else {
-                throw new SAXException("No ldap-user-group-provider element found")
+                // return originalXmlContent.split("\n")
+            }
+            def azureGraphUserGroupProvider = parsedXml.userGroupProvider.find { it.'class' as String == AZURE_GRAPH_USER_GROUP_PROVIDER_CLASS }
+            if (azureGraphUserGroupProvider) {
+                def serializedProvider = new XmlUtil().serialize(azureGraphUserGroupProvider)
+                serializedProvider = serializedProvider.replaceFirst(XML_DECLARATION_REGEX, "")
+                originalXmlContent = originalXmlContent.replaceFirst(AZURE_GRAPH_USER_GROUP_PROVIDER_REGEX, serializedProvider)
+            }
+            def fileUserGroupProvider = parsedXml.userGroupProvider.find { it.'class' as String == FILE_USER_GROUP_PROVIDER_CLASS }
+            if (fileUserGroupProvider) {
+                def serializedProvider = new XmlUtil().serialize(fileUserGroupProvider)
+                serializedProvider = serializedProvider.replaceFirst(XML_DECLARATION_REGEX, "")
+                originalXmlContent = originalXmlContent.replaceFirst(FILE_USER_GROUP_PROVIDER_REGEX, serializedProvider)
             }
         } catch (SAXException e) {
-            logger.warn("No userGroupProvider with class ${LDAP_USER_GROUP_PROVIDER_CLASS} found in XML content. " +
+            logger.warn("No userGroupProvider with class ${LDAP_USER_GROUP_PROVIDER_CLASS}/${AZURE_GRAPH_USER_GROUP_PROVIDER_CLASS}/${FILE_USER_GROUP_PROVIDER_CLASS} found in XML content. " +
                     "The file could be empty or the element may be missing or commented out")
-            return originalXmlContent.split("\n")
         }
+        return originalXmlContent.split("\n")
     }
 
 }

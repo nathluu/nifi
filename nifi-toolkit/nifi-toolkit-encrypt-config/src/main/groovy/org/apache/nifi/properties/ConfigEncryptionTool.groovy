@@ -819,7 +819,7 @@ class ConfigEncryptionTool {
                 || it.@name =~ "Application ID") && it.@encryption != ""
             }
 
-            if (passwords.isEmpty()) {
+            if (passwords.isEmpty() {
                 if (isVerbose) {
                     logger.info("No encrypted password property elements found in ${filename}")
                 }
@@ -904,7 +904,6 @@ class ConfigEncryptionTool {
 
     String encryptAuthorizers(final String plainXml, final String newKeyHex = keyHex) {
         final SensitivePropertyProviderFactory providerFactory = getSensitivePropertyProviderFactory(newKeyHex)
-        logger.info("Encrypting Authorizers file")
 
         // TODO: Switch to XmlParser & XmlNodePrinter to maintain "empty" element structure
         try {

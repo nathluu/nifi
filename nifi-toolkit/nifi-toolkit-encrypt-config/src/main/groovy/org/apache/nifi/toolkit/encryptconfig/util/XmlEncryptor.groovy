@@ -114,7 +114,7 @@ abstract class XmlEncryptor {
                 node.text() && node.@encryption == ENCRYPTION_NONE
             }
 
-            logger.info("Encrypting ${nodesToEncrypt.size()} element(s) of XML document")
+            logger.debug("Encrypting ${nodesToEncrypt.size()} element(s) of XML document")
 
             if (nodesToEncrypt.size() == 0) {
                 return plainXmlContent
@@ -123,8 +123,8 @@ abstract class XmlEncryptor {
             nodesToEncrypt.each { node ->
                 String groupIdentifier = (String) node.parent().identifier
                 String propertyName = (String) node.@name
-                logger.info("groupIdentifier: " + groupIdentifier);
-                logger.info("propertyName: " + propertyName);
+                logger.debug("groupIdentifier: " + groupIdentifier);
+                logger.debug("propertyName: " + propertyName);
                 String encryptedValue = this.encryptionProvider.protect(node.text().trim(), providerFactory.getPropertyContext(groupIdentifier, propertyName))
                 node.@encryption = this.encryptionProvider.getIdentifierKey()
                 node.replaceBody(encryptedValue)
@@ -183,7 +183,7 @@ abstract class XmlEncryptor {
             // Find the provider element by class even if it has been renamed
             def sensitiveProperties = gPathCallback(doc."${gPath}")
 
-            logger.info("Marking ${sensitiveProperties.size()} sensitive element(s) of XML to be encrypted")
+            logger.debug("Marking ${sensitiveProperties.size()} sensitive element(s) of XML to be encrypted")
 
             if (sensitiveProperties.size() == 0) {
                 logger.debug("No populated sensitive properties found in XML content")

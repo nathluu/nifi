@@ -142,8 +142,9 @@ public class DatabaseUserGroupProvider implements ConfigurableUserGroupProvider 
         Validate.notNull(user);
 
         // update the user identity
-        final String sql = (databaseType instanceof SQLServerDatabaseType) ?
-                "UPDATE UGP_USER SET [IDENTITY] = ? WHERE IDENTIFIER = ?" : "UPDATE UGP_USER SET IDENTITY = ? WHERE IDENTIFIER = ?";
+        final String sql = (databaseType instanceof SQLServerDatabaseType)
+                ? "UPDATE UGP_USER SET [IDENTITY] = ? WHERE IDENTIFIER = ?"
+                : "UPDATE UGP_USER SET IDENTITY = ? WHERE IDENTIFIER = ?";
         final int updated = jdbcTemplate.update(sql, user.getIdentity(), user.getIdentifier());
 
         // if no rows were updated then there is no user with the given identifier, so return null
@@ -204,8 +205,8 @@ public class DatabaseUserGroupProvider implements ConfigurableUserGroupProvider 
         if (user == null) {
             groups = null;
         } else {
-            final String userGroupSql = (databaseType instanceof SQLServerDatabaseType) ?
-                    "SELECT " +
+            final String userGroupSql = (databaseType instanceof SQLServerDatabaseType)
+                    ? "SELECT " +
                             "G.IDENTIFIER AS IDENTIFIER, " +
                             "G.[IDENTITY] AS [IDENTITY] " +
                     "FROM " +
@@ -213,9 +214,8 @@ public class DatabaseUserGroupProvider implements ConfigurableUserGroupProvider 
                              "UGP_USER_GROUP AS UG " +
                     "WHERE " +
                              "G.IDENTIFIER = UG.GROUP_IDENTIFIER AND " +
-                             "UG.USER_IDENTIFIER = ?" :
-
-                    "SELECT " +
+                             "UG.USER_IDENTIFIER = ?"
+                    : "SELECT " +
                             "G.IDENTIFIER AS IDENTIFIER, " +
                             "G.IDENTITY AS IDENTITY " +
                     "FROM " +

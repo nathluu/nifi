@@ -415,7 +415,7 @@ public class DatabaseUserGroupProvider implements ConfigurableUserGroupProvider 
     private DatabaseType getDatabaseType(final DataSource dataSource) {
         try (final Connection connection = dataSource.getConnection()) {
             return DatabaseTypeRegister.getDatabaseTypeForConnection(connection);
-        } catch ( SQLException e) {
+        } catch (SQLException e) {
             LOGGER.error(e.getMessage(), e);
             throw new FlywayException("Unable to obtain connection from Flyway DataSource", e);
         }

@@ -94,7 +94,7 @@ public class CustomFlywayConfiguration implements FlywayConfigurationCustomizer 
      * @param dataSource the data source
      * @return the database type
      */
-    public static DatabaseType getDatabaseType(final DataSource dataSource) {
+    public DatabaseType getDatabaseType(final DataSource dataSource) {
         try (final Connection connection = dataSource.getConnection()) {
             return DatabaseTypeRegister.getDatabaseTypeForConnection(connection);
         } catch (SQLException e) {

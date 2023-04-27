@@ -17,7 +17,6 @@
 package org.apache.nifi.registry.security.authorization.database;
 
 import org.apache.commons.lang3.Validate;
-import org.apache.nifi.registry.db.CustomFlywayConfiguration;
 import org.apache.nifi.registry.security.authorization.AuthorizerConfigurationContext;
 import org.apache.nifi.registry.security.authorization.ConfigurableUserGroupProvider;
 import org.apache.nifi.registry.security.authorization.Group;
@@ -131,8 +130,9 @@ public class DatabaseUserGroupProvider implements ConfigurableUserGroupProvider 
     @Override
     public User addUser(final User user) throws AuthorizationAccessException {
         Validate.notNull(user);
-        final String sql = (databaseType instanceof SQLServerDatabaseType) ?
-                "INSERT INTO UGP_USER(IDENTIFIER, [IDENTITY]) VALUES (?, ?)" : "INSERT INTO UGP_USER(IDENTIFIER, IDENTITY) VALUES (?, ?)";
+        final String sql = (databaseType instanceof SQLServerDatabaseType)
+                ? "INSERT INTO UGP_USER(IDENTIFIER, [IDENTITY]) VALUES (?, ?)"
+                : "INSERT INTO UGP_USER(IDENTIFIER, IDENTITY) VALUES (?, ?)";
         jdbcTemplate.update(sql, new Object[] {user.getIdentifier(), user.getIdentity()});
         return user;
     }
@@ -181,8 +181,9 @@ public class DatabaseUserGroupProvider implements ConfigurableUserGroupProvider 
     @Override
     public User getUserByIdentity(final String identity) throws AuthorizationAccessException {
         Validate.notBlank(identity);
-        final String sql = (databaseType instanceof SQLServerDatabaseType) ?
-                "SELECT * FROM UGP_USER WHERE [IDENTITY] = ?" : "SELECT * FROM UGP_USER WHERE IDENTITY = ?";
+        final String sql = (databaseType instanceof SQLServerDatabaseType)
+                ? "SELECT * FROM UGP_USER WHERE [IDENTITY] = ?"
+                : "SELECT * FROM UGP_USER WHERE IDENTITY = ?";
         final DatabaseUser databaseUser = queryForObject(sql, new Object[] {identity}, new DatabaseUserRowMapper());
         if (databaseUser == null) {
             return null;
@@ -282,8 +283,9 @@ public class DatabaseUserGroupProvider implements ConfigurableUserGroupProvider 
         Validate.notNull(group);
 
         // insert to the group table...
-        final String groupSql = (databaseType instanceof SQLServerDatabaseType) ?
-                "INSERT INTO UGP_GROUP(IDENTIFIER, [IDENTITY]) VALUES (?, ?)" : "INSERT INTO UGP_GROUP(IDENTIFIER, IDENTITY) VALUES (?, ?)";
+        final String groupSql = (databaseType instanceof SQLServerDatabaseType)
+                ? "INSERT INTO UGP_GROUP(IDENTIFIER, [IDENTITY]) VALUES (?, ?)"
+                : "INSERT INTO UGP_GROUP(IDENTIFIER, IDENTITY) VALUES (?, ?)";
         jdbcTemplate.update(groupSql, group.getIdentifier(), group.getName());
 
         // insert to the user-group table...
@@ -297,8 +299,9 @@ public class DatabaseUserGroupProvider implements ConfigurableUserGroupProvider 
         Validate.notNull(group);
 
         // update the group identity
-        final String updateGroupSql = (databaseType instanceof SQLServerDatabaseType) ?
-                "UPDATE UGP_GROUP SET [IDENTITY] = ? WHERE IDENTIFIER = ?" : "UPDATE UGP_GROUP SET IDENTITY = ? WHERE IDENTIFIER = ?";
+        final String updateGroupSql = (databaseType instanceof SQLServerDatabaseType)
+                ? "UPDATE UGP_GROUP SET [IDENTITY] = ? WHERE IDENTIFIER = ?"
+                : "UPDATE UGP_GROUP SET IDENTITY = ? WHERE IDENTIFIER = ?";
         final int updated = jdbcTemplate.update(updateGroupSql, group.getName(), group.getIdentifier());
 
         // if no rows were updated then a group does not exist for the given identifier, so return null

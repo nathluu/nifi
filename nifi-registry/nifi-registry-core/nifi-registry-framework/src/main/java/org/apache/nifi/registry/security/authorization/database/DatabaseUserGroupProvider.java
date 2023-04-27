@@ -121,7 +121,7 @@ public class DatabaseUserGroupProvider implements ConfigurableUserGroupProvider 
     @Override
     public User addUser(final User user) throws AuthorizationAccessException {
         Validate.notNull(user);
-        final String sql = "INSERT INTO UGP_USER(IDENTIFIER, IDENTITY) VALUES (?, ?)";
+        final String sql = "INSERT INTO UGP_USER(IDENTIFIER, [IDENTITY]) VALUES (?, ?)";
         jdbcTemplate.update(sql, new Object[] {user.getIdentifier(), user.getIdentity()});
         return user;
     }
@@ -131,7 +131,7 @@ public class DatabaseUserGroupProvider implements ConfigurableUserGroupProvider 
         Validate.notNull(user);
 
         // update the user identity
-        final String sql = "UPDATE UGP_USER SET IDENTITY = ? WHERE IDENTIFIER = ?";
+        final String sql = "UPDATE UGP_USER SET [IDENTITY] = ? WHERE IDENTIFIER = ?";
         final int updated = jdbcTemplate.update(sql, user.getIdentity(), user.getIdentifier());
 
         // if no rows were updated then there is no user with the given identifier, so return null
@@ -170,7 +170,7 @@ public class DatabaseUserGroupProvider implements ConfigurableUserGroupProvider 
     public User getUserByIdentity(final String identity) throws AuthorizationAccessException {
         Validate.notBlank(identity);
 
-        final String sql = "SELECT * FROM UGP_USER WHERE IDENTITY = ?";
+        final String sql = "SELECT * FROM UGP_USER WHERE [IDENTITY] = ?";
         final DatabaseUser databaseUser = queryForObject(sql, new Object[] {identity}, new DatabaseUserRowMapper());
         if (databaseUser == null) {
             return null;
@@ -194,7 +194,7 @@ public class DatabaseUserGroupProvider implements ConfigurableUserGroupProvider 
             final String userGroupSql =
                     "SELECT " +
                             "G.IDENTIFIER AS IDENTIFIER, " +
-                            "G.IDENTITY AS IDENTITY " +
+                            "G.[IDENTITY] AS [IDENTITY] " +
                     "FROM " +
                             "UGP_GROUP AS G, " +
                             "UGP_USER_GROUP AS UG " +
@@ -260,7 +260,7 @@ public class DatabaseUserGroupProvider implements ConfigurableUserGroupProvider 
         Validate.notNull(group);
 
         // insert to the group table...
-        final String groupSql = "INSERT INTO UGP_GROUP(IDENTIFIER, IDENTITY) VALUES (?, ?)";
+        final String groupSql = "INSERT INTO UGP_GROUP(IDENTIFIER, [IDENTITY]) VALUES (?, ?)";
         jdbcTemplate.update(groupSql, group.getIdentifier(), group.getName());
 
         // insert to the user-group table...
@@ -274,7 +274,7 @@ public class DatabaseUserGroupProvider implements ConfigurableUserGroupProvider 
         Validate.notNull(group);
 
         // update the group identity
-        final String updateGroupSql = "UPDATE UGP_GROUP SET IDENTITY = ? WHERE IDENTIFIER = ?";
+        final String updateGroupSql = "UPDATE UGP_GROUP SET [IDENTITY] = ? WHERE IDENTIFIER = ?";
         final int updated = jdbcTemplate.update(updateGroupSql, group.getName(), group.getIdentifier());
 
         // if no rows were updated then a group does not exist for the given identifier, so return null

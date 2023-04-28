@@ -29,8 +29,9 @@ import javax.sql.DataSource;
 import java.sql.SQLException;
 
 @Configuration
-@Profile({"mssql", "mssql-12"})
+@Profile("mssql-12")
 public class MSSQL12DataSourceFactory extends TestDataSourceFactory{
+
     private static final MSSQLServerContainer MSSQL_CONTAINER = new MSSQLServerContainer("mcr.microsoft.com/mssql/server:2022-latest").acceptLicense();
 
     static {
@@ -43,7 +44,7 @@ public class MSSQL12DataSourceFactory extends TestDataSourceFactory{
         dataSource.setURL(MSSQL_CONTAINER.getJdbcUrl());
         dataSource.setUser(MSSQL_CONTAINER.getUsername());
         dataSource.setPassword(MSSQL_CONTAINER.getPassword());
-        dataSource.setDatabaseName(MSSQL_CONTAINER.getDatabaseName());
+//        dataSource.setDatabaseName(MSSQL_CONTAINER.getDatabaseName());
         return dataSource;
     }
 

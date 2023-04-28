@@ -16,21 +16,40 @@
  */
 package org.apache.nifi.registry.db;
 
+import com.microsoft.sqlserver.jdbc.SQLServerDataSource;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.testcontainers.containers.MSSQLServerContainer;
+import org.testcontainers.delegate.DatabaseDelegate;
+import org.testcontainers.jdbc.JdbcDatabaseDelegate;
+
+import javax.annotation.PostConstruct;
+import javax.script.ScriptException;
+import javax.sql.DataSource;
+import java.sql.SQLException;
 
 @Configuration
 @Profile({"mssql", "mssql-12"})
-public class MSSQL12DataSourceFactory extends MSSQLDataSourceFactory{
-    private static final MSSQLServerContainer MSSQL_CONTAINER = new MSSQLCustomContainer("mcr.microsoft.com/mssql/server:2022-latest").acceptLicense();
+public class MSSQL12DataSourceFactory extends TestDataSourceFactory{
+    private static final MSSQLServerContainer MSSQL_CONTAINER = new MSSQLServerContainer("mcr.microsoft.com/mssql/server:2022-latest").acceptLicense();
 
     static {
         MSSQL_CONTAINER.start();
     }
 
     @Override
-    protected MSSQLServerContainer mssqlContainer() {
-        return MSSQL_CONTAINER;
+    protected DataSource createDataSource() {
+        final SQLServerDataSource dataSource = new SQLServerDataSource();
+        dataSource.setURL(MSSQL_CONTAINER.getJdbcUrl());
+        dataSource.setUser(MSSQL_CONTAINER.getUsername());
+        dataSource.setPassword(MSSQL_CONTAINER.getPassword());
+        dataSource.setDatabaseName(MSSQL_CONTAINER.getDatabaseName());
+        return dataSource;
+    }
+
+    @PostConstruct
+    public void initDatabase() throws SQLException, ScriptException {
+        DatabaseDelegate databaseDelegate = new JdbcDatabaseDelegate(MSSQL_CONTAINER, "");
+        databaseDelegate.execute("DROP DATABASE test; CREATE DATABASE test;", "", 0, false, true);
     }
 }

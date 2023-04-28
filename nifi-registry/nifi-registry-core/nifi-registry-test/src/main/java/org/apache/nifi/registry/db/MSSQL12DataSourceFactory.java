@@ -23,7 +23,7 @@ import org.testcontainers.containers.MSSQLServerContainer;
 @Configuration
 @Profile({"mssql", "mssql-12"})
 public class MSSQL12DataSourceFactory extends MSSQLDataSourceFactory{
-    private static final MSSQLServerContainer MSSQL_CONTAINER = new MSSQLCustomContainer("mcr.microsoft.com/mssql/server:2022-latest");
+    private static final MSSQLServerContainer MSSQL_CONTAINER = new MSSQLCustomContainer("mcr.microsoft.com/mssql/server:2022-latest").acceptLicense();
 
     static {
         MSSQL_CONTAINER.start();

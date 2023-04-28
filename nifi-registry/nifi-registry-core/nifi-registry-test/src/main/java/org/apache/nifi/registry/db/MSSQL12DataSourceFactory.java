@@ -29,7 +29,7 @@ import javax.sql.DataSource;
 import java.sql.SQLException;
 
 @Configuration
-@Profile("mssql-12")
+@Profile("mssql-16")
 public class MSSQL12DataSourceFactory extends TestDataSourceFactory{
 
     private static final MSSQLServerContainer MSSQL_CONTAINER = new MSSQLServerContainer("mcr.microsoft.com/mssql/server:2022-latest").acceptLicense();

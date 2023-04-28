@@ -148,7 +148,7 @@
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>mssql12-test</id>
+                                <id>mssql16-test</id>
                                 <phase>verify</phase>
                                 <goals>
                                     <goal>integration-test</goal>

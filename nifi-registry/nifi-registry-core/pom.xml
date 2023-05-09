@@ -148,6 +148,19 @@
                                 </configuration>
                             </execution>
                             <execution>
+                                <id>mssql16-test</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                                <configuration>
+                                    <systemPropertyVariables>
+                                        <spring.profiles.active>mssql-15</spring.profiles.active>
+                                    </systemPropertyVariables>
+                                </configuration>
+                            </execution>
+                            <execution>
                                 <id>mariadb-10_2-test</id>
                                 <phase>verify</phase>
                                 <goals>

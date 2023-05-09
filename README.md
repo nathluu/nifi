@@ -291,7 +291,7 @@ Assuming Docker is running on the system where the build is running, then the fo
 | MariaDB 10.3      | `mvn verify -Pcontrib-check -Dspring.profiles.active=mariadb-10-3` |
 | MySQL 8           | `mvn verify -Pcontrib-check -Dspring.profiles.active=mysql-8`      |
 | PostgreSQL 10     | `mvn verify -Dspring.profiles.active=postgres-10`                  |
-| MSSQL Server 2022 | `mvn verify -Dspring.profiles.active=mssql-16`                     |
+| MSSQL Server 2019 | `mvn verify -Dspring.profiles.active=mssql-15`                     |
 
 For a full list of the available DataSource factories, consult the `nifi-registry-test` module.
 

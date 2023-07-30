@@ -24,7 +24,7 @@
 
     <properties>
         <cassandra.sdk.version>3.11.4</cassandra.sdk.version>
-        <cassandra.guava.version>19.0</cassandra.guava.version>
+        <cassandra.guava.version>32.1.1-jre</cassandra.guava.version>
     </properties>
 
     <artifactId>nifi-cassandra-bundle</artifactId>

@@ -122,9 +122,9 @@ public class HashiCorpVaultConfiguration extends EnvironmentVaultConfiguration {
             final String vaultUri = Objects.requireNonNull(environment.getProperty(VaultConfigurationKey.URI.key),
                     "Missing required property " + VaultConfigurationKey.URI.key);
             if (vaultUri.startsWith(HTTPS)) {
-                requireSslProperty("vault.ssl.key-store", environment);
-                requireSslProperty("vault.ssl.key-store-password", environment);
-                requireSslProperty("vault.ssl.key-store-type", environment);
+//                requireSslProperty("vault.ssl.key-store", environment);
+//                requireSslProperty("vault.ssl.key-store-password", environment);
+//                requireSslProperty("vault.ssl.key-store-type", environment);
                 requireSslProperty("vault.ssl.trust-store", environment);
                 requireSslProperty("vault.ssl.trust-store-password", environment);
                 requireSslProperty("vault.ssl.trust-store-type", environment);

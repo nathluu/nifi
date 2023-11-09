@@ -16,24 +16,15 @@
  */
 package org.apache.nifi.kafka.shared.property.provider;
 
-import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.SASL_MECHANISM;
-import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.SECURITY_PROTOCOL;
-import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.SSL_CONTEXT_SERVICE;
-import static org.apache.nifi.kafka.shared.property.KafkaClientProperty.SASL_CLIENT_CALLBACK_HANDLER_CLASS;
-import static org.apache.nifi.kafka.shared.property.KafkaClientProperty.SASL_JAAS_CONFIG;
-import static org.apache.nifi.kafka.shared.property.KafkaClientProperty.SASL_LOGIN_CLASS;
-import static org.apache.nifi.kafka.shared.property.KafkaClientProperty.SSL_KEYSTORE_LOCATION;
-import static org.apache.nifi.kafka.shared.property.KafkaClientProperty.SSL_KEYSTORE_PASSWORD;
-import static org.apache.nifi.kafka.shared.property.KafkaClientProperty.SSL_KEYSTORE_TYPE;
-import static org.apache.nifi.kafka.shared.property.KafkaClientProperty.SSL_KEY_PASSWORD;
-import static org.apache.nifi.kafka.shared.property.KafkaClientProperty.SSL_TRUSTSTORE_LOCATION;
-import static org.apache.nifi.kafka.shared.property.KafkaClientProperty.SSL_TRUSTSTORE_PASSWORD;
-import static org.apache.nifi.kafka.shared.property.KafkaClientProperty.SSL_TRUSTSTORE_TYPE;
+import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.*;
+import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.BOOTSTRAP_SERVERS;
+import static org.apache.nifi.kafka.shared.property.KafkaClientProperty.*;
 
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.context.PropertyContext;
 import org.apache.nifi.controller.ConfigurationContext;
+import org.apache.nifi.kafka.shared.aad.CustomAuthenticateCallbackHandler;
 import org.apache.nifi.kafka.shared.login.DelegatingLoginConfigProvider;
 import org.apache.nifi.kafka.shared.login.LoginConfigProvider;
 import org.apache.nifi.kafka.shared.property.SaslMechanism;
@@ -58,6 +49,8 @@ public class StandardKafkaPropertyProvider implements KafkaPropertyProvider {
     private static final String SASL_GSSAPI_CUSTOM_LOGIN_CLASS = "org.apache.nifi.processors.kafka.pubsub.CustomKerberosLogin";
 
     public static final String SASL_AWS_MSK_IAM_CLIENT_CALLBACK_HANDLER_CLASS = "software.amazon.msk.auth.iam.IAMClientCallbackHandler";
+
+    public static final String AAD_AUTHENTICATION_CALLBACK_HANDLER_CLASS = "org.apache.nifi.kafka.shared.aad.CustomAuthenticateCallbackHandler";
 
     private static final LoginConfigProvider LOGIN_CONFIG_PROVIDER = new DelegatingLoginConfigProvider();
 
@@ -91,6 +84,12 @@ public class StandardKafkaPropertyProvider implements KafkaPropertyProvider {
                 properties.put(SASL_LOGIN_CLASS.getProperty(), SASL_GSSAPI_CUSTOM_LOGIN_CLASS);
             } else if (SaslMechanism.AWS_MSK_IAM == saslMechanism && isAwsMskIamCallbackHandlerFound()) {
                 properties.put(SASL_CLIENT_CALLBACK_HANDLER_CLASS.getProperty(), SASL_AWS_MSK_IAM_CLIENT_CALLBACK_HANDLER_CLASS);
+            } else if (SaslMechanism.OAUTHBEARER == saslMechanism && isCustomAADLoginFound()) {
+                properties.put(SASL_LOGIN_CALLBACK_HANDLER_CLASS.getProperty(), AAD_AUTHENTICATION_CALLBACK_HANDLER_CLASS);
+                CustomAuthenticateCallbackHandler.authority = context.getProperty(TENANT_ID).evaluateAttributeExpressions().getValue();
+                CustomAuthenticateCallbackHandler.appId = context.getProperty(APP_ID).evaluateAttributeExpressions().getValue();
+                CustomAuthenticateCallbackHandler.appSecret = context.getProperty(APP_SECRET).evaluateAttributeExpressions().getValue();
+                CustomAuthenticateCallbackHandler.bootstrapServer = context.getProperty(BOOTSTRAP_SERVERS).evaluateAttributeExpressions().getValue();
             }
         }
     }
@@ -167,6 +166,10 @@ public class StandardKafkaPropertyProvider implements KafkaPropertyProvider {
 
     private static boolean isCustomKerberosLoginFound() {
         return isClassFound(SASL_GSSAPI_CUSTOM_LOGIN_CLASS);
+    }
+
+    public static boolean isCustomAADLoginFound() {
+        return isClassFound(AAD_AUTHENTICATION_CALLBACK_HANDLER_CLASS);
     }
 
     public static boolean isAwsMskIamCallbackHandlerFound() {

@@ -62,6 +62,48 @@ public interface KafkaClientComponent {
             .defaultValue(SaslMechanism.GSSAPI.getValue())
             .build();
 
+    PropertyDescriptor TENANT_ID = new PropertyDescriptor.Builder()
+            .name("aad.tenant_id")
+            .displayName("Tenant ID")
+            .description("Tenant ID provided when using Azure Active Directory")
+            .sensitive(true)
+            .required(false)
+            .addValidator(StandardValidators.NON_BLANK_VALIDATOR)
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+            .dependsOn(
+                    SASL_MECHANISM,
+                    SaslMechanism.OAUTHBEARER.getValue()
+            )
+            .build();
+
+    PropertyDescriptor APP_ID = new PropertyDescriptor.Builder()
+            .name("aad.app_id")
+            .displayName("App Id")
+            .description("APP ID provided when using Azure Active Directory")
+            .sensitive(true)
+            .required(false)
+            .addValidator(StandardValidators.NON_BLANK_VALIDATOR)
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+            .dependsOn(
+                    SASL_MECHANISM,
+                    SaslMechanism.OAUTHBEARER.getValue()
+            )
+            .build();
+
+    PropertyDescriptor APP_SECRET = new PropertyDescriptor.Builder()
+            .name("aad.app_secret")
+            .displayName("App Secret")
+            .description("App Secret provided when using Azure Active Directory")
+            .sensitive(true)
+            .required(false)
+            .addValidator(StandardValidators.NON_BLANK_VALIDATOR)
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+            .dependsOn(
+                    SASL_MECHANISM,
+                    SaslMechanism.OAUTHBEARER.getValue()
+            )
+            .build();
+
     PropertyDescriptor SASL_USERNAME = new PropertyDescriptor.Builder()
             .name("sasl.username")
             .displayName("Username")

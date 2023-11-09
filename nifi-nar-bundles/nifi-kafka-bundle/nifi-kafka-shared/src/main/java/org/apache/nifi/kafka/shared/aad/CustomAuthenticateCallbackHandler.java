@@ -1,0 +1,89 @@
+package org.apache.nifi.kafka.shared.aad;
+
+import com.microsoft.aad.msal4j.*;
+import org.apache.kafka.common.KafkaException;
+import org.apache.kafka.common.security.auth.AuthenticateCallbackHandler;
+import org.apache.kafka.common.security.oauthbearer.OAuthBearerToken;
+import org.apache.kafka.common.security.oauthbearer.OAuthBearerTokenCallback;
+
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.AppConfigurationEntry;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeoutException;
+
+public class CustomAuthenticateCallbackHandler implements AuthenticateCallbackHandler {
+
+    final static ScheduledExecutorService EXECUTOR_SERVICE = Executors.newScheduledThreadPool(1);
+
+    public static String authority;
+    public static String appId;
+    public static String appSecret;
+    public static String bootstrapServer;
+    private ConfidentialClientApplication aadClient;
+    private ClientCredentialParameters aadParameters;
+
+    @Override
+    public void configure(Map<String, ?> configs, String mechanism, List<AppConfigurationEntry> jaasConfigEntries) {
+        bootstrapServer = bootstrapServer.replaceAll("\\[|\\]", "");
+        URI uri = URI.create("https://" + bootstrapServer);
+        String sbUri = uri.getScheme() + "://" + uri.getHost();
+        this.aadParameters =
+                ClientCredentialParameters.builder(Collections.singleton(sbUri + "/.default"))
+                        .build();
+
+        authority = "https://login.microsoftonline.com/" + authority + "/"; // 09b6b9cc-ba75-4e9f-b00c-cdef49725940 replace <tenant-id> with your tenant id
+//        appId = "d928f1fe-ced6-4824-ab21-dc4f10825a06"; // also called client id
+//        appSecret = "ezN8Q~gGhhLo6jpC_JwH.tOjbNLop3Bd~M0T1aX6"; // also called client secret
+    }
+
+    @Override
+    public void close() throws KafkaException {
+        // NOOP
+    }
+
+    @Override
+    public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
+        for (Callback callback: callbacks) {
+            if (callback instanceof OAuthBearerTokenCallback) {
+                try {
+                    OAuthBearerToken token = getOAuthBearerToken();
+                    OAuthBearerTokenCallback oauthCallback = (OAuthBearerTokenCallback) callback;
+                    oauthCallback.token(token);
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                throw new UnsupportedCallbackException(callback);
+            }
+        }
+    }
+
+    OAuthBearerToken getOAuthBearerToken() throws MalformedURLException, InterruptedException, ExecutionException, TimeoutException
+    {
+        if (this.aadClient == null) {
+            synchronized(this) {
+                if (this.aadClient == null) {
+                    IClientCredential credential = ClientCredentialFactory.createFromSecret(this.appSecret);
+                    this.aadClient = ConfidentialClientApplication.builder(this.appId, credential)
+                            .authority(this.authority)
+                            .build();
+                }
+            }
+        }
+
+        IAuthenticationResult authResult = this.aadClient.acquireToken(this.aadParameters).get();
+        System.out.println("TOKEN ACQUIRED");
+
+        return new OAuthBearerTokenImp(authResult.accessToken(), authResult.expiresOnDate());
+    }
+
+}

@@ -40,9 +40,7 @@ public class CustomAuthenticateCallbackHandler implements AuthenticateCallbackHa
                 ClientCredentialParameters.builder(Collections.singleton(sbUri + "/.default"))
                         .build();
 
-        authority = "https://login.microsoftonline.com/" + authority + "/"; // 09b6b9cc-ba75-4e9f-b00c-cdef49725940 replace <tenant-id> with your tenant id
-//        appId = "d928f1fe-ced6-4824-ab21-dc4f10825a06"; // also called client id
-//        appSecret = "ezN8Q~gGhhLo6jpC_JwH.tOjbNLop3Bd~M0T1aX6"; // also called client secret
+        authority = "https://login.microsoftonline.com/" + authority + "/";
     }
 
     @Override

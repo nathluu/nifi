@@ -34,8 +34,18 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.*;
-import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.APP_SECRET;
+import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.AZURE_APP_ID;
+import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.AZURE_APP_SECRET;
+import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.AZURE_TENANT_ID;
+import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.KERBEROS_CREDENTIALS_SERVICE;
+import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.KERBEROS_KEYTAB;
+import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.KERBEROS_PRINCIPAL;
+import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.KERBEROS_SERVICE_NAME;
+import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.SASL_MECHANISM;
+import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.SASL_PASSWORD;
+import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.SASL_USERNAME;
+import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.SECURITY_PROTOCOL;
+import static org.apache.nifi.kafka.shared.component.KafkaClientComponent.SELF_CONTAINED_KERBEROS_USER_SERVICE;
 
 /**
  * Custom Validation function for components supporting Kafka clients
@@ -252,7 +262,7 @@ public class KafkaClientCustomValidationFunction implements Function<ValidationC
         if (saslMechanismProperty.isSet()) {
             final SaslMechanism saslMechanism = SaslMechanism.getSaslMechanism(saslMechanismProperty.getValue());
 
-            if (SaslMechanism.OAUTHBEARER == saslMechanism) {
+            if (SaslMechanism.AADOAUTHBEARER == saslMechanism) {
                 if (!StandardKafkaPropertyProvider.isCustomAADLoginFound()) {
                     final String explanation = String.format("[%s] required class not found: Kafka modules must be compiled with AAD OAUTHBEARER enabled",
                             StandardKafkaPropertyProvider.AAD_AUTHENTICATION_CALLBACK_HANDLER_CLASS);
@@ -263,29 +273,29 @@ public class KafkaClientCustomValidationFunction implements Function<ValidationC
                             .explanation(explanation)
                             .build());
                 }
-                String tenantId = validationContext.getProperty(TENANT_ID).evaluateAttributeExpressions().getValue();
+                String tenantId = validationContext.getProperty(AZURE_TENANT_ID).evaluateAttributeExpressions().getValue();
                 if (tenantId == null || tenantId.isEmpty()) {
-                    final String explanation = String.format("[%s] required when [%s] mechanism used", TENANT_ID.getDisplayName(), saslMechanism);
+                    final String explanation = String.format("[%s] required when [%s] mechanism used", AZURE_TENANT_ID.getDisplayName(), saslMechanism);
                     results.add(new ValidationResult.Builder()
-                            .subject(TENANT_ID.getDisplayName())
+                            .subject(AZURE_TENANT_ID.getDisplayName())
                             .valid(false)
                             .explanation(explanation)
                             .build());
                 }
-                String appId = validationContext.getProperty(APP_ID).evaluateAttributeExpressions().getValue();
+                String appId = validationContext.getProperty(AZURE_APP_ID).evaluateAttributeExpressions().getValue();
                 if (appId == null || appId.isEmpty()) {
-                    final String explanation = String.format("[%s] required when [%s] mechanism used", APP_ID.getDisplayName(), saslMechanism);
+                    final String explanation = String.format("[%s] required when [%s] mechanism used", AZURE_APP_ID.getDisplayName(), saslMechanism);
                     results.add(new ValidationResult.Builder()
-                            .subject(APP_ID.getDisplayName())
+                            .subject(AZURE_APP_ID.getDisplayName())
                             .valid(false)
                             .explanation(explanation)
                             .build());
                 }
-                String appSecret = validationContext.getProperty(APP_SECRET).evaluateAttributeExpressions().getValue();
+                String appSecret = validationContext.getProperty(AZURE_APP_SECRET).evaluateAttributeExpressions().getValue();
                 if (appSecret == null || appSecret.isEmpty()) {
-                    final String explanation = String.format("[%s] required when [%s] mechanism used", APP_SECRET.getDisplayName(), saslMechanism);
+                    final String explanation = String.format("[%s] required when [%s] mechanism used", AZURE_APP_SECRET.getDisplayName(), saslMechanism);
                     results.add(new ValidationResult.Builder()
-                            .subject(APP_SECRET.getDisplayName())
+                            .subject(AZURE_APP_SECRET.getDisplayName())
                             .valid(false)
                             .explanation(explanation)
                             .build());

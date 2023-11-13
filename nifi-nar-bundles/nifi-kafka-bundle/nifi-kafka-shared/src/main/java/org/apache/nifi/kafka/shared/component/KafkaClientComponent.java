@@ -62,45 +62,45 @@ public interface KafkaClientComponent {
             .defaultValue(SaslMechanism.GSSAPI.getValue())
             .build();
 
-    PropertyDescriptor TENANT_ID = new PropertyDescriptor.Builder()
+    PropertyDescriptor AZURE_TENANT_ID = new PropertyDescriptor.Builder()
             .name("aad.tenant_id")
-            .displayName("Tenant ID")
-            .description("Tenant ID provided when using Azure Active Directory")
+            .displayName("Azure Tenant ID")
+            .description("Azure Tenant ID provided when using Azure Active Directory")
             .sensitive(true)
             .required(false)
             .addValidator(StandardValidators.NON_BLANK_VALIDATOR)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
             .dependsOn(
                     SASL_MECHANISM,
-                    SaslMechanism.OAUTHBEARER.getValue()
+                    SaslMechanism.AADOAUTHBEARER.getValue()
             )
             .build();
 
-    PropertyDescriptor APP_ID = new PropertyDescriptor.Builder()
+    PropertyDescriptor AZURE_APP_ID = new PropertyDescriptor.Builder()
             .name("aad.app_id")
-            .displayName("App Id")
-            .description("APP ID provided when using Azure Active Directory")
+            .displayName("Azure App Id")
+            .description("Azure APP ID provided when using Azure Active Directory")
             .sensitive(true)
             .required(false)
             .addValidator(StandardValidators.NON_BLANK_VALIDATOR)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
             .dependsOn(
                     SASL_MECHANISM,
-                    SaslMechanism.OAUTHBEARER.getValue()
+                    SaslMechanism.AADOAUTHBEARER.getValue()
             )
             .build();
 
-    PropertyDescriptor APP_SECRET = new PropertyDescriptor.Builder()
+    PropertyDescriptor AZURE_APP_SECRET = new PropertyDescriptor.Builder()
             .name("aad.app_secret")
-            .displayName("App Secret")
-            .description("App Secret provided when using Azure Active Directory")
+            .displayName("Azure App Secret")
+            .description("Azure App Secret provided when using Azure Active Directory")
             .sensitive(true)
             .required(false)
             .addValidator(StandardValidators.NON_BLANK_VALIDATOR)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
             .dependsOn(
                     SASL_MECHANISM,
-                    SaslMechanism.OAUTHBEARER.getValue()
+                    SaslMechanism.AADOAUTHBEARER.getValue()
             )
             .build();
 

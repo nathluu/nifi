@@ -1,6 +1,10 @@
 package org.apache.nifi.kafka.shared.aad;
 
-import com.microsoft.aad.msal4j.*;
+import com.microsoft.aad.msal4j.ClientCredentialFactory;
+import com.microsoft.aad.msal4j.ClientCredentialParameters;
+import com.microsoft.aad.msal4j.ConfidentialClientApplication;
+import com.microsoft.aad.msal4j.IClientCredential;
+import com.microsoft.aad.msal4j.IAuthenticationResult;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.security.auth.AuthenticateCallbackHandler;
 import org.apache.kafka.common.security.oauthbearer.OAuthBearerToken;
@@ -16,13 +20,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
 
-public class CustomAuthenticateCallbackHandler implements AuthenticateCallbackHandler {
-
-    final static ScheduledExecutorService EXECUTOR_SERVICE = Executors.newScheduledThreadPool(1);
+public class AADAuthenticateCallbackHandler implements AuthenticateCallbackHandler {
 
     public static String authority;
     public static String appId;
@@ -79,7 +79,6 @@ public class CustomAuthenticateCallbackHandler implements AuthenticateCallbackHa
         }
 
         IAuthenticationResult authResult = this.aadClient.acquireToken(this.aadParameters).get();
-        System.out.println("TOKEN ACQUIRED");
 
         return new OAuthBearerTokenImp(authResult.accessToken(), authResult.expiresOnDate());
     }

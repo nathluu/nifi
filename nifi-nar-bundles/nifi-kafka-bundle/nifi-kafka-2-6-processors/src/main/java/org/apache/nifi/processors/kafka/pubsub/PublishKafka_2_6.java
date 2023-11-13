@@ -304,9 +304,9 @@ public class PublishKafka_2_6 extends AbstractProcessor implements KafkaPublishC
         properties.add(KERBEROS_SERVICE_NAME);
         properties.add(KERBEROS_PRINCIPAL);
         properties.add(KERBEROS_KEYTAB);
-        properties.add(TENANT_ID);
-        properties.add(APP_ID);
-        properties.add(APP_SECRET);
+        properties.add(AZURE_TENANT_ID);
+        properties.add(AZURE_APP_ID);
+        properties.add(AZURE_APP_SECRET);
         properties.add(SASL_USERNAME);
         properties.add(SASL_PASSWORD);
         properties.add(AWS_PROFILE_NAME);

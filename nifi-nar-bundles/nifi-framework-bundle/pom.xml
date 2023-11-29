@@ -447,8 +447,9 @@
             <dependency>
                 <groupId>org.eclipse.jgit</groupId>
                 <artifactId>org.eclipse.jgit</artifactId>
-                <version>4.3.1.201605051710-r</version>
+                <version>6.6.1.202309021850-r</version>
             </dependency>
+
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-test</artifactId>
@@ -496,7 +497,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-compress</artifactId>
-                <version>1.23.0</version>
+                <version>1.24.0</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>

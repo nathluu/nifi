@@ -321,6 +321,9 @@ public class ConsumeKafkaRecord_2_6 extends AbstractProcessor implements KafkaCl
         descriptors.add(KERBEROS_KEYTAB);
         descriptors.add(SASL_USERNAME);
         descriptors.add(SASL_PASSWORD);
+        descriptors.add(AZURE_TENANT_ID);
+        descriptors.add(AZURE_APP_ID);
+        descriptors.add(AZURE_APP_SECRET);
         descriptors.add(TOKEN_AUTHENTICATION);
         descriptors.add(AWS_PROFILE_NAME);
         descriptors.add(SSL_CONTEXT_SERVICE);

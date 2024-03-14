@@ -60,7 +60,7 @@ public class TestExcelRecordReader {
                 .build();
 
         MalformedRecordException mre = assertThrows(MalformedRecordException.class, () -> new ExcelRecordReader(configuration, getInputStream("notExcel.txt"), logger));
-        fail("Test failed with exception: " + mre.getMessage());
+        fail("Test failed with exception: " + ExceptionUtils.getStackTrace(mre));
         assertTrue(ExceptionUtils.getStackTrace(mre).contains("this is not a valid OOXML"));
     }
 

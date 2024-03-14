@@ -59,7 +59,7 @@ public class TestExcelRecordReader {
                 .build();
 
         MalformedRecordException mre = assertThrows(MalformedRecordException.class, () -> new ExcelRecordReader(configuration, getInputStream("notExcel.txt"), logger));
-        assertTrue(ExceptionUtils.getStackTrace(mre).contains("this is not a valid OOXML"));
+        assertTrue(ExceptionUtils.getStackTrace(mre).contains("Could not open the specified zip entry source stream"));
     }
 
     @Test

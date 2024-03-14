@@ -43,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith(MockitoExtension.class)
 public class TestExcelRecordReader {
@@ -59,7 +60,7 @@ public class TestExcelRecordReader {
                 .build();
 
         MalformedRecordException mre = assertThrows(MalformedRecordException.class, () -> new ExcelRecordReader(configuration, getInputStream("notExcel.txt"), logger));
-        mre.printStackTrace();
+        fail("Test failed with exception: " + mre.getMessage());
         assertTrue(ExceptionUtils.getStackTrace(mre).contains("this is not a valid OOXML"));
     }
 

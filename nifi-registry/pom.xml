@@ -36,15 +36,15 @@
     </modules>
     <properties>
         <jax.rs.api.version>2.1.1</jax.rs.api.version>
-        <spring.boot.version>2.7.16</spring.boot.version>
+        <spring.boot.version>2.7.18</spring.boot.version>
         <flyway.version>8.5.13</flyway.version>
         <flyway.tests.version>7.0.0</flyway.tests.version>
         <swagger.ui.version>3.12.0</swagger.ui.version>
         <groovy.eclipse.compiler.version>3.7.0</groovy.eclipse.compiler.version>
         <jaxb.version>2.3.2</jaxb.version>
-        <jgit.version>5.13.2.202306221912-r</jgit.version>
+        <jgit.version>6.9.0.202403050737-r</jgit.version>
         <!-- JGit 5.13 requires SSHD 2.9.3 or earlier -->
-        <org.apache.sshd.version>2.9.3</org.apache.sshd.version>
+        <org.apache.sshd.version>2.12.1</org.apache.sshd.version>
     </properties>
 
     <dependencyManagement>

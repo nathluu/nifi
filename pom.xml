@@ -146,11 +146,11 @@
         <netty.3.version>3.10.6.Final</netty.3.version>
         <snakeyaml.version>2.2</snakeyaml.version>
         <netty.4.version>4.1.107.Final</netty.4.version>
-        <spring.version>5.3.33</spring.version>
-        <spring.security.version>5.8.11</spring.security.version>
+        <spring.version>5.3.31</spring.version>
+        <spring.security.version>5.8.7</spring.security.version>
         <swagger.annotations.version>1.6.12</swagger.annotations.version>
         <h2.version>2.2.224</h2.version>
-        <zookeeper.version>3.9.2</zookeeper.version>
+        <zookeeper.version>3.9.1</zookeeper.version>
         <caffeine.version>2.9.3</caffeine.version>
     </properties>
     <dependencyManagement>

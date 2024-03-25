@@ -780,12 +780,12 @@ language governing permissions and limitations under the License. -->
             <version>1.25.0</version>
             <type>nar</type>
         </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-hwx-schema-registry-nar</artifactId>
-            <version>1.25.0</version>
-            <type>nar</type>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-hwx-schema-registry-nar</artifactId>-->
+<!--            <version>1.25.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-redis-service-api-nar</artifactId>

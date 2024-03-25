@@ -28,8 +28,8 @@
     <modules>
         <module>nifi-framework-bundle</module>
         <module>nifi-standard-shared-bundle</module>
-        <module>nifi-hadoop-bundle</module>
-        <module>nifi-hadoop-libraries-bundle</module>
+<!--        <module>nifi-hadoop-bundle</module>-->
+<!--        <module>nifi-hadoop-libraries-bundle</module>-->
         <module>nifi-jetty-bundle</module>
         <module>nifi-provenance-repository-bundle</module>
         <module>nifi-standard-bundle</module>
@@ -52,7 +52,7 @@
         <module>nifi-asana-bundle</module>
         <module>nifi-media-bundle</module>
         <module>nifi-avro-bundle</module>
-        <module>nifi-couchbase-bundle</module>
+<!--        <module>nifi-couchbase-bundle</module>-->
         <module>nifi-azure-bundle</module>
         <module>nifi-ldap-iaa-providers-bundle</module>
         <module>nifi-kerberos-iaa-providers-bundle</module>
@@ -408,6 +408,11 @@
                 <groupId>com.maxmind.geoip2</groupId>
                 <artifactId>geoip2</artifactId>
                 <version>2.16.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>1.26.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

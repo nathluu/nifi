@@ -294,18 +294,18 @@ language governing permissions and limitations under the License. -->
             <artifactId>nifi-stateless-bootstrap</artifactId>
             <version>1.25.0</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-hadoop-libraries-nar</artifactId>
-            <version>1.25.0</version>
-            <type>nar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-hadoop-nar</artifactId>
-            <version>1.25.0</version>
-            <type>nar</type>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-hadoop-libraries-nar</artifactId>-->
+<!--            <version>1.25.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-hadoop-nar</artifactId>-->
+<!--            <version>1.25.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-kafka-1-0-nar</artifactId>
@@ -462,12 +462,12 @@ language governing permissions and limitations under the License. -->
             <version>1.25.0</version>
             <type>nar</type>
         </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-ambari-nar</artifactId>
-            <version>1.25.0</version>
-            <type>nar</type>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-ambari-nar</artifactId>-->
+<!--            <version>1.25.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-rethinkdb-nar</artifactId>
@@ -492,30 +492,30 @@ language governing permissions and limitations under the License. -->
             <version>1.25.0</version>
             <type>nar</type>
         </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-couchbase-nar</artifactId>
-            <version>1.25.0</version>
-            <type>nar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-couchbase-services-api-nar</artifactId>
-            <version>1.25.0</version>
-            <type>nar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-hbase-nar</artifactId>
-            <version>1.25.0</version>
-            <type>nar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-hbase_2-client-service-nar</artifactId>
-            <version>1.25.0</version>
-            <type>nar</type>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-couchbase-nar</artifactId>-->
+<!--            <version>1.25.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-couchbase-services-api-nar</artifactId>-->
+<!--            <version>1.25.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-hbase-nar</artifactId>-->
+<!--            <version>1.25.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-hbase_2-client-service-nar</artifactId>-->
+<!--            <version>1.25.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-oauth2-provider-nar</artifactId>

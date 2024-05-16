@@ -16,7 +16,7 @@
 # under the License.
 #
 
-FROM eclipse-temurin:11-jre AS artifactbase
+FROM nathluu/eclipse-temurin:11-jre-minideb AS artifactbase
 LABEL maintainer="Apache NiFi <dev@nifi.apache.org>"
 LABEL site="https://nifi.apache.org"
 
@@ -40,6 +40,9 @@ RUN unzip ${NIFI_REGISTRY_BASE_DIR}/${NIFI_REGISTRY_BINARY_NAME} -d ${NIFI_REGIS
     && rm ${NIFI_REGISTRY_BASE_DIR}/${NIFI_REGISTRY_BINARY_NAME} \
     && ln -s ${NIFI_REGISTRY_BASE_DIR}/nifi-registry-${NIFI_REGISTRY_VERSION} ${NIFI_REGISTRY_HOME}
 
+RUN curl -L -o ${NIFI_REGISTRY_HOME}/lib/postgresql-42.6.2.jar https://repo1.maven.org/maven2/org/postgresql/postgresql/42.6.2/postgresql-42.6.2.jar \
+    && curl -L -o ${NIFI_REGISTRY_HOME}/lib/mssql-jdbc-12.6.1.jre11.jar  https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/12.6.1.jre11/mssql-jdbc-12.6.1.jre11.jar
+
 COPY $NIFI_TOOLKIT_BINARY $NIFI_REGISTRY_BASE_DIR
 RUN unzip ${NIFI_REGISTRY_BASE_DIR}/nifi-toolkit-${NIFI_REGISTRY_VERSION}-bin.zip -d ${NIFI_REGISTRY_BASE_DIR} \
     && rm ${NIFI_REGISTRY_BASE_DIR}/nifi-toolkit-${NIFI_REGISTRY_VERSION}-bin.zip \
@@ -47,7 +50,7 @@ RUN unzip ${NIFI_REGISTRY_BASE_DIR}/nifi-toolkit-${NIFI_REGISTRY_VERSION}-bin.zi
     && ln -s ${NIFI_TOOLKIT_HOME} ${NIFI_REGISTRY_BASE_DIR}/nifi-toolkit-${NIFI_REGISTRY_VERSION}
 
 
-FROM eclipse-temurin:11-jre
+FROM nathluu/eclipse-temurin:11-jre-minideb
 LABEL maintainer="Apache NiFi Registry <dev@nifi.apache.org>"
 LABEL site="https://nifi.apache.org"
 

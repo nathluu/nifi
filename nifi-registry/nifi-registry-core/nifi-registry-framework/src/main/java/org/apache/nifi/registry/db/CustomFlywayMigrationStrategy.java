@@ -104,9 +104,16 @@ public class CustomFlywayMigrationStrategy implements FlywayMigrationStrategy {
      */
     private boolean isNewDatabase(final DataSource dataSource) {
         try (final Connection connection = dataSource.getConnection();
-             final ResultSet rsUpper = connection.getMetaData().getTables(null, null, "BUCKET", null);
-             final ResultSet rsLower = connection.getMetaData().getTables(null, null, "bucket", null)) {
-            return !rsUpper.next() && !rsLower.next();
+             final ResultSet rs = connection.getMetaData().getTables(null, null, "%", null)) {
+            boolean isNew = true;
+            while (rs.next()) {
+                String tableName = rs.getString("TABLE_NAME");
+                if ("BUCKET".equalsIgnoreCase(tableName)) {
+                    isNew = false;
+                    break;
+                }
+            }
+            return isNew;
         } catch (SQLException e) {
             LOGGER.error(e.getMessage(), e);
             throw new FlywayException("Unable to obtain connection from Flyway DataSource", e);

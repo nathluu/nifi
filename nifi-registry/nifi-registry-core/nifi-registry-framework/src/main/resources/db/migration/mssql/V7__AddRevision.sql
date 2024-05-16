@@ -13,14 +13,9 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
--- test data for buckets
-
-insert into BUCKET (id, name, description, created)
-  values ('1', 'Bucket 1', 'This is test bucket 1', '2017-09-11 12:51:00.000');
-
-insert into BUCKET (id, name, description, created)
-  values ('2', 'Bucket 2', 'This is test bucket 2', '2017-09-11 12:52:00.000');
-
-insert into BUCKET (id, name, description, created)
-  values ('3', 'Bucket 3', 'This is test bucket 3', '2017-09-11 12:53:00.000');
-
+CREATE TABLE REVISION (
+    ENTITY_ID VARCHAR(200) NOT NULL,
+    VERSION BIGINT NOT NULL DEFAULT (0),
+    CLIENT_ID VARCHAR(100),
+    CONSTRAINT PK__REVISION_ENTITY_ID PRIMARY KEY (ENTITY_ID)
+);

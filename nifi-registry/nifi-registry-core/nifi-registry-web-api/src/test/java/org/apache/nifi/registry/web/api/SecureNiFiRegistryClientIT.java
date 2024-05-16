@@ -149,6 +149,7 @@ public class SecureNiFiRegistryClientIT extends IntegrationTestBase {
         snapshotMetadata.setFlowIdentifier(createdFlow.getIdentifier());
         snapshotMetadata.setVersion(1);
         snapshotMetadata.setComments("This is snapshot #1");
+        snapshotMetadata.setTimestamp(System.currentTimeMillis());
 
         final VersionedProcessGroup rootProcessGroup = new VersionedProcessGroup();
         rootProcessGroup.setIdentifier("root-pg");
@@ -169,6 +170,8 @@ public class SecureNiFiRegistryClientIT extends IntegrationTestBase {
         snapshotMetadata2.setVersion(2);
         snapshotMetadata2.setComments("This is snapshot #2");
         snapshotMetadata2.setAuthor(SECOND_IDENTITY);
+        snapshotMetadata2.setTimestamp(System.currentTimeMillis());
+
 
         final VersionedFlowSnapshot snapshot2 = new VersionedFlowSnapshot();
         snapshot2.setSnapshotMetadata(snapshotMetadata2);

@@ -354,12 +354,12 @@ language governing permissions and limitations under the License. -->
             <version>1.26.0</version>
             <type>nar</type>
         </dependency>
-        <dependency>
+        <!-- <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-kudu-nar</artifactId>
             <version>1.26.0</version>
             <type>nar</type>
-        </dependency>
+        </dependency> -->
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-ldap-iaa-providers-nar</artifactId>
@@ -492,18 +492,18 @@ language governing permissions and limitations under the License. -->
             <version>1.26.0</version>
             <type>nar</type>
         </dependency>
-        <dependency>
+        <!-- <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-couchbase-nar</artifactId>
             <version>1.26.0</version>
             <type>nar</type>
-        </dependency>
-        <dependency>
+        </dependency> -->
+        <!-- <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-couchbase-services-api-nar</artifactId>
             <version>1.26.0</version>
             <type>nar</type>
-        </dependency>
+        </dependency> -->
         <!-- <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-hbase-nar</artifactId>
@@ -780,12 +780,12 @@ language governing permissions and limitations under the License. -->
             <version>1.26.0</version>
             <type>nar</type>
         </dependency>
-        <dependency>
+        <!-- <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-hwx-schema-registry-nar</artifactId>
             <version>1.26.0</version>
             <type>nar</type>
-        </dependency>
+        </dependency> -->
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-redis-service-api-nar</artifactId>

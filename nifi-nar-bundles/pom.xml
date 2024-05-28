@@ -36,23 +36,23 @@
         <module>nifi-standard-services</module>
         <module>nifi-update-attribute-bundle</module>
         <module>nifi-kafka-bundle</module>
-        <module>nifi-kudu-bundle</module>
+        <!-- <module>nifi-kudu-bundle</module> -->
         <module>nifi-solr-bundle</module>
         <module>nifi-confluent-platform-bundle</module>
         <module>nifi-aws-bundle</module>
-        <module>nifi-social-media-bundle</module>
+        <!-- <module>nifi-social-media-bundle</module> -->
         <module>nifi-enrich-bundle</module>
         <module>nifi-hl7-bundle</module>
         <module>nifi-ccda-bundle</module>
         <module>nifi-language-translation-bundle</module>
         <module>nifi-mongodb-bundle</module>
         <module>nifi-flume-bundle</module>
-        <module>nifi-hbase-bundle</module>
+        <!-- <module>nifi-hbase-bundle</module> -->
         <module>nifi-ambari-bundle</module>
         <module>nifi-asana-bundle</module>
         <module>nifi-media-bundle</module>
         <module>nifi-avro-bundle</module>
-        <module>nifi-couchbase-bundle</module>
+        <!-- <module>nifi-couchbase-bundle</module> -->
         <module>nifi-azure-bundle</module>
         <module>nifi-ldap-iaa-providers-bundle</module>
         <module>nifi-kerberos-iaa-providers-bundle</module>
@@ -65,7 +65,7 @@
         <module>nifi-splunk-bundle</module>
         <module>nifi-jms-bundle</module>
         <module>nifi-beats-bundle</module>
-        <module>nifi-cassandra-bundle</module>
+        <!-- <module>nifi-cassandra-bundle</module> -->
         <module>nifi-spring-bundle</module>
         <module>nifi-hive-bundle</module>
         <module>nifi-site-to-site-reporting-bundle</module>

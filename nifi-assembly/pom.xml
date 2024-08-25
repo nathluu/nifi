@@ -354,12 +354,12 @@ language governing permissions and limitations under the License. -->
             <version>1.27.0</version>
             <type>nar</type>
         </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-kudu-nar</artifactId>
-            <version>1.27.0</version>
-            <type>nar</type>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-kudu-nar</artifactId>-->
+<!--            <version>1.27.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-ldap-iaa-providers-nar</artifactId>
@@ -414,12 +414,12 @@ language governing permissions and limitations under the License. -->
             <version>1.27.0</version>
             <type>nar</type>
         </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-social-media-nar</artifactId>
-            <version>1.27.0</version>
-            <type>nar</type>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-social-media-nar</artifactId>-->
+<!--            <version>1.27.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-hl7-nar</artifactId>
@@ -492,30 +492,30 @@ language governing permissions and limitations under the License. -->
             <version>1.27.0</version>
             <type>nar</type>
         </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-couchbase-nar</artifactId>
-            <version>1.27.0</version>
-            <type>nar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-couchbase-services-api-nar</artifactId>
-            <version>1.27.0</version>
-            <type>nar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-hbase-nar</artifactId>
-            <version>1.27.0</version>
-            <type>nar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-hbase_2-client-service-nar</artifactId>
-            <version>1.27.0</version>
-            <type>nar</type>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-couchbase-nar</artifactId>-->
+<!--            <version>1.27.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-couchbase-services-api-nar</artifactId>-->
+<!--            <version>1.27.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-hbase-nar</artifactId>-->
+<!--            <version>1.27.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-hbase_2-client-service-nar</artifactId>-->
+<!--            <version>1.27.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-oauth2-provider-nar</artifactId>
@@ -606,24 +606,24 @@ language governing permissions and limitations under the License. -->
             <version>1.27.0</version>
             <type>nar</type>
         </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-cassandra-nar</artifactId>
-            <version>1.27.0</version>
-            <type>nar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-cassandra-services-api-nar</artifactId>
-            <version>1.27.0</version>
-            <type>nar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-cassandra-services-nar</artifactId>
-            <version>1.27.0</version>
-            <type>nar</type>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-cassandra-nar</artifactId>-->
+<!--            <version>1.27.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-cassandra-services-api-nar</artifactId>-->
+<!--            <version>1.27.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-cassandra-services-nar</artifactId>-->
+<!--            <version>1.27.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-spring-nar</artifactId>
@@ -780,12 +780,12 @@ language governing permissions and limitations under the License. -->
             <version>1.27.0</version>
             <type>nar</type>
         </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-hwx-schema-registry-nar</artifactId>
-            <version>1.27.0</version>
-            <type>nar</type>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-hwx-schema-registry-nar</artifactId>-->
+<!--            <version>1.27.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-redis-service-api-nar</artifactId>
@@ -1107,23 +1107,23 @@ language governing permissions and limitations under the License. -->
                 </dependency>
             </dependencies>
         </profile>
-        <profile>
-            <id>include-hbase1_1_2</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-                <property>
-                    <name>allProfiles</name>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.nifi</groupId>
-                    <artifactId>nifi-hbase_1_1_2-client-service-nar</artifactId>
-                    <version>1.27.0</version>
-                    <type>nar</type>
-                </dependency>
-            </dependencies>
-        </profile>
+<!--        <profile>-->
+<!--            <id>include-hbase1_1_2</id>-->
+<!--            <activation>-->
+<!--                <activeByDefault>false</activeByDefault>-->
+<!--                <property>-->
+<!--                    <name>allProfiles</name>-->
+<!--                </property>-->
+<!--            </activation>-->
+<!--            <dependencies>-->
+<!--                <dependency>-->
+<!--                    <groupId>org.apache.nifi</groupId>-->
+<!--                    <artifactId>nifi-hbase_1_1_2-client-service-nar</artifactId>-->
+<!--                    <version>1.27.0</version>-->
+<!--                    <type>nar</type>-->
+<!--                </dependency>-->
+<!--            </dependencies>-->
+<!--        </profile>-->
         <profile>
             <id>include-hive</id>
             <activation>

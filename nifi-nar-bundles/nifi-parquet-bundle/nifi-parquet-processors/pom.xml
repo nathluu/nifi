@@ -122,6 +122,11 @@
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-kerberos-user-service-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>dnsjava</groupId>
+            <artifactId>dnsjava</artifactId>
+            <version>3.6.1</version>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.apache.nifi</groupId>

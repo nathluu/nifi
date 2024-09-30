@@ -732,12 +732,12 @@ language governing permissions and limitations under the License. -->
             <version>1.27.0</version>
             <type>nar</type>
         </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-gcp-nar</artifactId>
-            <version>1.27.0</version>
-            <type>nar</type>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-gcp-nar</artifactId>-->
+<!--            <version>1.27.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-gcp-services-api-nar</artifactId>

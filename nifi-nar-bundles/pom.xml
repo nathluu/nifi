@@ -37,9 +37,9 @@
         <module>nifi-update-attribute-bundle</module>
         <module>nifi-kafka-bundle</module>
 <!--        <module>nifi-kudu-bundle</module>-->
-        <module>nifi-solr-bundle</module>
+<!--        <module>nifi-solr-bundle</module>-->
         <module>nifi-confluent-platform-bundle</module>
-        <module>nifi-aws-bundle</module>
+<!--        <module>nifi-aws-bundle</module>-->
 <!--        <module>nifi-social-media-bundle</module>-->
         <module>nifi-enrich-bundle</module>
         <module>nifi-hl7-bundle</module>
@@ -84,7 +84,7 @@
         <module>nifi-groovyx-bundle</module>
         <module>nifi-websocket-bundle</module>
         <module>nifi-tcp-bundle</module>
-        <module>nifi-gcp-bundle</module>
+<!--        <module>nifi-gcp-bundle</module>-->
         <module>nifi-registry-bundle</module>
         <module>nifi-stateful-analysis-bundle</module>
         <module>nifi-poi-bundle</module>

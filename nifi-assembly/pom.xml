@@ -925,10 +925,9 @@ language governing permissions and limitations under the License. -->
         <profile>
             <id>include-hadoop</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <activeByDefault>true</activeByDefault>
                 <property>
                     <name>allProfiles</name>
-                    <value>true</value>
                 </property>
             </activation>
             <dependencies>

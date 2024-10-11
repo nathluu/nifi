@@ -928,6 +928,7 @@ language governing permissions and limitations under the License. -->
                 <activeByDefault>false</activeByDefault>
                 <property>
                     <name>allProfiles</name>
+                    <value>true</value>
                 </property>
             </activation>
             <dependencies>
@@ -1276,7 +1277,7 @@ language governing permissions and limitations under the License. -->
               <allProfiles>true</allProfiles>
             </properties>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <activeByDefault>true</activeByDefault>
             </activation>
         </profile>
     </profiles>

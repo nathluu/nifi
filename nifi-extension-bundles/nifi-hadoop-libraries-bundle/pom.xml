@@ -45,6 +45,11 @@
                 <artifactId>guava</artifactId>
                 <version>33.2.1-jre</version>
             </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${org.apache.commons.io.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

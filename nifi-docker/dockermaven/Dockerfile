@@ -86,6 +86,7 @@ RUN groupadd -g ${GID} nifi || groupmod -n nifi `getent group ${GID} | cut -d: -
     && apt-get install -y python3 \
     && apt-get install -y python3-pip \
     && apt-get install -y python3-venv \
+    && apt-get upgrade -y \
     && apt-get -y autoremove \
     && apt-get clean autoclean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

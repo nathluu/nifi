@@ -300,12 +300,12 @@ language governing permissions and limitations under the License. -->
             <version>1.27.0</version>
             <type>nar</type>
         </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-hadoop-nar</artifactId>
-            <version>1.27.0</version>
-            <type>nar</type>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-hadoop-nar</artifactId>-->
+<!--            <version>1.27.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-kafka-1-0-nar</artifactId>
@@ -384,12 +384,12 @@ language governing permissions and limitations under the License. -->
             <version>1.27.0</version>
             <type>nar</type>
         </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-hadoop-dbcp-service-nar</artifactId>
-            <version>1.27.0</version>
-            <type>nar</type>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.nifi</groupId>-->
+<!--            <artifactId>nifi-hadoop-dbcp-service-nar</artifactId>-->
+<!--            <version>1.27.0</version>-->
+<!--            <type>nar</type>-->
+<!--        </dependency>-->
 	<dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-mongodb-client-service-api-nar</artifactId>

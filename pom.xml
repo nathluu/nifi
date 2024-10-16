@@ -99,8 +99,8 @@
         <maven.surefire.arguments />
         <!-- Disable maven-site-plugin from parent POM -->
         <maven.site.skip>true</maven.site.skip>
-        <docker.jdk.image.name>bellsoft/liberica-openjdk-debian</docker.jdk.image.name>
-        <docker.jre.image.name>bellsoft/liberica-openjre-debian</docker.jre.image.name>
+        <docker.jdk.image.name>nathluu/eclipse-temurin-jdk</docker.jdk.image.name>
+        <docker.jre.image.name>nathluu/eclipse-temurin-jre</docker.jre.image.name>
         <docker.image.tag>21</docker.image.tag>
         <node.version>v22.1.0</node.version>
         <frontend.mvn.plugin.version>1.15.0</frontend.mvn.plugin.version>

@@ -32,6 +32,8 @@ public class DatabaseProfileValueSource implements ProfileValueSource {
     private static final String MARIADB = "mariadb";
     private static final String POSTGRES = "postgres";
     private static final String H2 = "h2";
+    private static final String MSSQL = "mssql";
+
 
     private String currentDatabase;
 
@@ -46,6 +48,8 @@ public class DatabaseProfileValueSource implements ProfileValueSource {
             currentDatabase = MARIADB;
         } else if (activeProfiles.contains(POSTGRES)) {
             currentDatabase = POSTGRES;
+        } else if (activeProfiles.contains(MSSQL)) {
+            currentDatabase = MSSQL;
         }
     }
 

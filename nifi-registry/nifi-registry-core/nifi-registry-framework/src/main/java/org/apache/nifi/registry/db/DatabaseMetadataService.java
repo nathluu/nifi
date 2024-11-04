@@ -16,6 +16,8 @@
  */
 package org.apache.nifi.registry.db;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,19 +58,36 @@ import org.apache.nifi.registry.extension.bundle.BundleFilterParams;
 import org.apache.nifi.registry.extension.bundle.BundleType;
 import org.apache.nifi.registry.extension.bundle.BundleVersionFilterParams;
 import org.apache.nifi.registry.service.MetadataService;
+import org.flywaydb.core.api.FlywayException;
+import org.flywaydb.core.internal.database.DatabaseType;
+import org.flywaydb.core.internal.database.DatabaseTypeRegister;
+import org.flywaydb.database.sqlserver.SQLServerDatabaseType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import javax.sql.DataSource;
+
 @Repository
 public class DatabaseMetadataService implements MetadataService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final DatabaseType databaseType;
+
 
     @Autowired
     public DatabaseMetadataService(final JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+        this.databaseType = getDatabaseType(jdbcTemplate.getDataSource());
+    }
+
+    private DatabaseType getDatabaseType(final DataSource dataSource) {
+        try (final Connection connection = dataSource.getConnection()) {
+            return DatabaseTypeRegister.getDatabaseTypeForConnection(connection, null);
+        } catch (SQLException e) {
+            throw new FlywayException("Unable to obtain connection from Flyway DataSource", e);
+        }
     }
 
     //----------------- Buckets ---------------------------------
@@ -390,7 +409,9 @@ public class DatabaseMetadataService implements MetadataService {
 
     @Override
     public FlowSnapshotEntity getLatestSnapshot(final String flowIdentifier) {
-        final String sql = "SELECT * FROM FLOW_SNAPSHOT WHERE flow_id = ? ORDER BY version DESC LIMIT 1";
+        final String sql = (databaseType instanceof SQLServerDatabaseType)
+                ? "SELECT TOP 1 * FROM FLOW_SNAPSHOT WHERE flow_id = ? ORDER BY version DESC"
+                : "SELECT * FROM FLOW_SNAPSHOT WHERE flow_id = ? ORDER BY version DESC LIMIT 1";
 
         try {
             return jdbcTemplate.queryForObject(sql, new FlowSnapshotEntityRowMapper(), flowIdentifier);

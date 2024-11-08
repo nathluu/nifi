@@ -210,7 +210,7 @@
                 <!-- Exclude Velocity from OpenSAML -->
                 <exclusion>
                     <groupId>org.apache.velocity</groupId>
-                    <artifactId>velocity</artifactId>
+                    <artifactId>velocity-engine-core</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.bouncycastle</groupId>

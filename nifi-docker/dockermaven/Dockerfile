@@ -83,9 +83,9 @@ RUN groupadd -g ${GID} nifi || groupmod -n nifi `getent group ${GID} | cut -d: -
     && useradd --shell /bin/bash -u ${UID} -g ${GID} -m nifi \
     && apt-get update \
     && apt-get install -y jq xmlstarlet procps \
-    && apt-get install -y python3 \
-    && apt-get install -y python3-pip \
-    && apt-get install -y python3-venv \
+#    && apt-get install -y python3 \
+#    && apt-get install -y python3-pip \
+#    && apt-get install -y python3-venv \
     && apt-get upgrade -y \
     && apt-get -y autoremove \
     && apt-get clean autoclean \
